@@ -2,18 +2,18 @@
 title: "Word Document Template"
 abstract: "This is the abstract"
 author:
-  - "*A. Jordan Nafa*"
-  - "University of North Texas"
+  - "First Name Last Name"
+  - "Core Clinical Sciences"
 format: 
   docx:
     toc: false
-    reference-doc: "../../assets/templates/Manuscript_Template.docx"
-    linkcolor: "#00853E"
-    csl: "../../assets/apsa.csl"
+    reference-doc: "../../Templates/Word-Template-Times.docx"
+    linkcolor: "blue"
+    csl: "../../Templates/elsevier-vancouver.csl"
 fontsize: 12pt
 bibliography: "../../assets/references.bib"
 tbl-cap-location: top
-linkcolor: "#00853E"
+linkcolor: "blue"
 crossref: 
   tbl-prefix: ""
   fig-prefix: ""
