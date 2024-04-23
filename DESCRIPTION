@@ -10,7 +10,9 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
 Imports: 
-    survival (>= 3.5-8)
+    data.table (>= 1.15.4),
+    survival (>= 3.5-8),
+    tidysmd (>= 0.2.0)
 Depends: 
     R (>= 4.3.2)
 Suggests: 
