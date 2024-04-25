@@ -7,12 +7,14 @@
 #' @param msmFormula A formula for the MSM to be fitted, which usually includes the outcome, the treatment and any effect modifiers.
 #' @param propensityScoreModel Either a formula or a \code{glm} object representing the model for treatment assignment given covariates.
 #' @param participationModel Either a formula or a \code{glm} object representing the model for study participation given effect modifiers. If a formula and the "data" argument is a list, then add participation as the left-hand side of the formula.
-#' @param propensityWeights Custom weights balancing covariates between treatments. Providing them will override the formula or model provided by \code{propensityScoreModel}.
-#' @param participationWeights Custom weights balancing effect modifiers between study and target populations. Providing them will override the formula or model provided by \code{participationModel}.
+#' @param propensityWeights Vector of custom weights balancing covariates between treatments. Providing them will override the formula or model provided by \code{propensityScoreModel}. This vector should have as any entries as the sample size of the study data.
+#' @param participationWeights Vector of custom weights balancing effect modifiers between study and target populations. Providing them will override the formula or model provided by \code{participationModel}. This vector should have as any entries as the sample size of the study data.
 #' @param treatment String indicating name of treatment variable. If \code{NULL}, it will be auto-detected from \code{propensityScoreModel} if provided; otherwise it will remain \code{NULL}. Note that when using custom weights, \code{treatment} should be provided so that \code{summary.transportIP} and \code{plot.transportIP} works.
 #' @param participation String indicating name of participation variable. If \code{NULL}, it will be auto-detected from \code{participationModel} if provided; otherwise it will remain \code{NULL}. Note that when using custom weights, \code{participation} should be provided so that \code{summary.transportIP} and \code{plot.transportIP} works.
 #' @param response String indicating name of response variable. If \code{NULL}, it will be auto-detected form \code{msmFormula}.
+#' @param family Either a \code{family} function as used for \code{glm}, or one of \code{c("coxph", "survreg")}.
 #' @param data Either a single data frame containing merged study and target datasets, or a list containing the study dataset and the target dataset. Note that if participationModel is a glm object, the datasets would have been merged, so provide the merged dataset containing response, treatment, covariates controlled for in the original study, study participation and effect modifiers if this is the case. Make sure to code treatment and participation as 0-1 or TRUE-FALSE, with 1 and TRUE representing treatment group and study data, respectively.
+#' @param transport A boolean indicating whether a generalizability analysis (false) or a transportability analysis (true) is done.
 #'
 #' @details
 #' ...
@@ -29,7 +31,7 @@ transportIP <- function(msmFormula,
                         treatment = NULL,
                         participation = NULL,
                         response = NULL,
-                        family, data, transport) {
+                        family, data, transport = T) {
   
   # Auto-detect response, treatment and participation if provided
   if (is.null(response)) response <- all.terms(msmFormula)[1]
@@ -69,10 +71,17 @@ transportIP <- function(msmFormula,
       # Handle case when study and target data are not yet merged
       effectModifiers <- all.vars(participationModel)[-1]
       studyParticipationData <- studyData[, names(studyData) %in% c(effectModifiers, "participation")]
-      targetParticipationData <- targetData[, names(studyData) %in% c(effectModifiers, "participation")]
-      if (!(participation %in% names(studyParticipationData))) studyParticipationData$participation <- 1
-      if (!(participation %in% names(targetParticipationData))) targetParticipationData$participation <- 0
+      targetParticipationData <- targetData[, names(targetData) %in% c(effectModifiers, "participation")]
+      if (!(participation %in% names(studyParticipationData))) {
+        studyParticipationData$participation <- 1
+        participation <- "participation"
+      }
+      if (!(participation %in% names(targetParticipationData))) {
+        targetParticipationData$participation <- 0
+        participation <- "participation"
+      }
       participationData <- rbind(studyParticipationData, targetParticipationData)
+      participationIndex <- which(names(participationData) == participation)
     }
     participationModel <- glm(participationModel, data = ifelse(!is.data.frame(data), participationData, data), family = binomial())
   }
@@ -104,24 +113,35 @@ transportIP <- function(msmFormula,
   propensityWeights <- ifelse(is.null(propensityWeights), obtainWeights(propensityScoreModel, type = "probability"), propensityWeights)
   participationWeights <- ifelse(is.null(participationWeights), obtainWeights(participationModel, type = ifelse(transport, "odds", "probability")), participationWeights)
   
+  # Makeshift solution to account for generalizability analysis
+  
+  if (!transport & length(participationWeights) > length(propensityWeights))
+    participationWeights <- participationWeights[participationModel$data[, participationIndex] == 1 |
+                                                   participationModel$data[, participationIndex] == 1]
+  
   finalWeights <-  propensityWeights * participationWeights
               
   if (!(treatment %in% all.terms(msmFormula)[-1])) stop("Treatment is not included in MSM.")
   
   # Fit MSM
+  # Variance of coeffs are corrected in this method for coxph and survreg
+  # Variance of coeffs are corrected in summary.transportIP for glm
   
   if (family == "coxph") {
     model <- survival::coxph(msmFormula, data = ifelse(!is.data.frame(data), studyData, data[data[,participationIndex] == 1 | 
                                                                                      data[,participationIndex] == T,]), weight = finalWeights)
+    model$var <- sandwich::vcovBS(model)
   } else if (family == "survreg") {
     model <- survival::survreg(msmFormula, data = ifelse(!is.data.frame(data), studyData, data[data[,participationIndex] == 1 | 
                                                                                        data[,participationIndex] == T,]), weight = finalWeights)
+    model$var <- sandwich::vcovBS(model)
   } else {
     model <- glm(msmFormula, family = family, data = ifelse(!is.data.frame(data), studyData, data[data[,participationIndex] == 1 | 
                                                                                                     data[,participationIndex] == T,]), weight = finalWeights)
   }
   
-  # NOTE: this model object has wrong SEs. The right ones are calculated by sandwich::vcovBS. Should we handle this here or in summary.transportIP?
+  # NOTE: this model object by itself has wrong SEs. The right ones are calculated by sandwich::vcovBS. Should we handle this here or in summary.transportIP?
+  # Answer: for glm objects, it should be handled in summary.transportIP. For survreg and coxph, it should be handled in this function
   
   transportIPResult <- list(msm = model,
                             propensityScoreModel = propensityScoreModel,
@@ -229,10 +249,20 @@ summary.transportIP <- function(transportIPResult, covariates = NULL, effectModi
                                                                                                     include_observed = T))
   participationBalance <- data.table::rbindlist(participationBalanceTables)
   
+  # If model is glm, calculate and replace correct SEs
+  
+  msm <- transportIPResult$msm
+  
+  msmSummary <- summary(msm)
+  
+  if (class(msmSummary) == "summary.glm") {
+    msmSummary$cov.unscaled <- sandwich::vcovBS(msm)
+    msmSummary$cov.scaled <- msmSummary$cov.unscaled / msmSummary$dispersion
+  }
   
   summaryTransportIP <- list(propensitySMD = propensityBalance,
                              participationSMD = participationBalance,
-                             msmSummary = summary(transportIPResult$msm))
+                             msmSummary = msmSummary)
   
   class(summaryTransportIP) <- "summary.transportIP"
   
@@ -262,7 +292,7 @@ print.summary.transportIP <- function(summaryTransportIP, out = stdout()) {
 #' Plots graphs for assessment of covariate balance assessment in a IOPW analysis
 #'
 #' @param transportIPResult Result from transportIP function
-#' @param type One of \code{"propensityHist", "propensitySMD", "participationHist", "participationSMD"}. \code{Hist} produces mirrored histograms of estimated probability of treatment between treatment groups (for \code{propensity}), or of estimated probability of participation between study and target data (for \code{participation}). \code{SMD} produces SMD plots of covariates between treatment groups (for \code{propensity}) or effect modifiers between study and target data (for \code{participation}).
+#' @param type One of \code{"propensityHist", "propensitySMD", "participationHist", "participationSMD", "msm"}. \code{Hist} produces mirrored histograms of estimated probability of treatment between treatment groups (for \code{propensity}), or of estimated probability of participation between study and target data (for \code{participation}). \code{SMD} produces SMD plots of covariates between treatment groups (for \code{propensity}) or effect modifiers between study and target data (for \code{participation}).
 #'
 #' @return
 #' @export
@@ -317,6 +347,8 @@ plot.transportIP <- function(transportIPResult, type = "propensityHist") {
         ggplot2::coord_flip() +
         ggplot2::theme_bw() +
         ggplot2::theme(legend.key = element_blank())
+    } else if (type == "msm") {
+      resultPlot <- modelsummary::modelplot(transportIPResult$msm, vcov = sandwich::vcovBS)
     }
   
   return(resultPlot)
