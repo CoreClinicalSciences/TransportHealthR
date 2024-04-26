@@ -1,77 +1,19 @@
-# Overview
+# TransportHealthR
 
-This is a template project folder for Core Clinical Sciences. **It is expected any additional specifications will build upon this folder structure.**
+`TransportHealthR` is an R package developed by Core Clinical Sciences to streamline transportability analyses for randomized clinical trials and observational studies. The package supports IP weighting for mergable individual patient data (IPD), G-computation for unmergable IPD and (aggregate data approach) for aggregate data.
 
-## Folders organization
+## Perks of package
 
-While different projects will require its own specific organization, it is important to establish a common template as a minimum organization. The folder template will include:  
+Transportability analysis is often done in separate steps by a statistician. One can perform such an analysis using existing causal inference packages, but some care is needed in order to ensure a valid analysis. `TransportHealthR` makes this process more accessible to statisticians and clinicians, as the model-fitting functions in the package inherently accomodate transportability analyses.
 
-```
-Folder Template
-  |__ Background-Materials
-      |__Client-Materials
-      |__Key-References 
-  |__ Data
-      |__Raw-Data
-      |__Processed-Data
-  |__ Outputs
-      |__Figures
-      |__Listings
-      |__Tables
-  |__ R
-      |__Functions
-      |__Temp
-  |__ Reference-Manager
-      |__References.bib
-  |__ Technical-Reports
-      |__Clinical-Study-Reports
-      |__Manuscripts
-  |__ Templates
+## Get started (WIP)
 
-```
+Use the `R` command `devtools::install_github("CoreClinicalSciences/TransportHealthR")` in the console.
 
-Each folders will contain the following: 
+## Get help (WIP)
 
--   `Background-materials`: A folder to store scientific and other reference documents.
+Contact quang\@coreclinicalsciences.com if you have any questions about the package.
 
-    -   `Client-Materials`: store key materials shared by clients here
+## Contribute (WIP)
 
-    -   `Key-References`: store other key materials here
-
--   `Data`: A folder to store your data.
-
-    -   `Raw-Data`: store the raw datasets here
-
-    -   `Processed-Data`: store the processed datasets here
-
--   `Outputs`: This is where you save all the tables, listings, figures to be used in presentations/reports.
-
-    -   `Figures`
-    -   `Listings`
-    -   `Tables`
-
--   `Presentations`: A folder for slide decks
-
--   `R`: This is where you keep your R (or other language) scripts
-
-    -   `Functions`: store your functions here
-    -   `Temp`: (Not necessary) save temporary outputs or scripts generated for exploratory or testing purposes
-    
--   `Reference-Manager`: store a reference manager (e.g., Endnote here) to output bib files
-
-    -   `references.bib`: A bib file to be used in reports/presentations
-
--   `Technical-Reports`: This is where you work on deliverables (e.g., clinical study reports, manuscripts, and other technical reports)
-
-    -   `Clinical-Study-Reports`
-    -   `Manuscripts`
-
--   `Templates`: Contains template documents for docx, tex, css, csl, and scss
-
-    -   `doc` template: Use `Word-Template-Times.docx` to style MS Word documents
-    -   `tex` files: Use to style Latex/PDF documents
-    -   `CSS` files: Use to style HTML documents
-    -   `CSL` files:
-        -    Use to define formatting of citations and bibliographies
-        -   Short for Citation Style Language (CSL)
-    -   `SCSS` files: Use for HTML documents as [Quarto themes](https://quarto.org/docs/output-formats/html-themes-more.html)
+Feel free to create issues in the package's Github repo. We'll address them as soon as we can.
