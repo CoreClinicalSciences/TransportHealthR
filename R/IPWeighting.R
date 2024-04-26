@@ -1,7 +1,7 @@
 #' @title Transportability analysis using IOPW
 #' 
 #' @description
-#' ...
+#' Estimates the coefficients of a marginal structural model (MSM) using IP weighting in a generalizability or transportability analysis. In particular, the estimators should be unbiased for the coefficients in the superpopulation or the target population, respectively.
 #' 
 #'
 #' @param msmFormula A formula for the MSM to be fitted, which usually includes the outcome, the treatment and any effect modifiers.
@@ -17,12 +17,27 @@
 #' @param transport A boolean indicating whether a generalizability analysis (false) or a transportability analysis (true) is done.
 #'
 #' @details
-#' ...
+#' The function fits models of treatment assignment and study participation in order to calculate the weights used to fit the MSM. For each of these models, if a formula is provided, logistic regression is used by default. If a \code{glm} object is provided, the function extracts the necessary weights from the object. The function does not support other weighting methods, so if they are required, provide custom weights.
+#' 
+#' The MSM-fitting functions do not provide correct standard errors as-is. \code{sandwich::vcovBS} is used to calculate robust bootstrap variance estimators of the parameter estimators. The function replaces the variance component in \code{summary.glm}, \code{coxph} and \code{survreg} with the robust variance estimators directly. This does not seem to behave well with \code{predict.glm} yet, but prediction is not of primary interest in a generalizability or transportability analysis.
 #'
 #' @return
+#' A \code{transportIP} object containing the following components:
+#' * \code{msm}: Raw model fit object for MSM of class \code{glm}, \code{survreg} and \code{coxph}, with the correct variance estimators appropriately replaced
+#' * \code{propensityScoreModel}: Model of treatment assignment, \code{NULL} if not provided and custom propensity weights are used
+#' * \code{participationModel}: Model of study participation, \code{NULL} if not provided and custom propensity weights are used
+#' * \code{propensityWeights}: Propensity weights used
+#' * \code{participationWeights}: Participation weights used
+#' * \code{finalWeights}: Weights used to fit MSM
+#' * \code{customPropensity}: Boolean indicating whether custom propensity weights are used
+#' * \code{customParticipation}: Boolean indicating whether custom participation weights are used
+#' * \code{treatment}: String indicating variable name of treatment
+#' * \code{participation}: String indicating variable name of participation
+#' * \code{data}: Data provided in \code{data} argument. Either a list containing study data and target data or a data frame containing both.
+#' 
 #' @export
 #'
-#' @examples
+#' @md
 transportIP <- function(msmFormula,
                         propensityScoreModel = NULL,
                         participationModel = NULL,
@@ -175,19 +190,21 @@ obtainWeights <- function(model, type = c("probability", "odds")) {
 #' @title Summarize results of a fitted MSM using the IOPW approach
 #' 
 #' @description
-#' Returns summary object which contains a summary of the fitted MSM as well as pre- and post-weighting standardized mean differences
+#' Returns summary object which contains a summary of the fitted MSM as well as pre- and post-weighting standardized mean differences (SMDs).
 #' 
-#' 
-#' @rdname summary
+#' @rdname summary.transportIP
 #'
 #' @param transportIPResult Result from transportIP function
 #' @param covariates Vector of strings indicating names of covariates in propensity model
 #' @param effectModifiers Vector of strings indicating names of effect modifiers in participation model
 #'
 #' @return
-#' @export
+#' The \code{summary.transportIP} function returns a \code{summary.transportIP} object containing the following components:
+#' * \code{propensitySMD}: Table of unweighted and weighted SMDs of covariates between treatment groups. Only propensity weights are used.
+#' * \code{participationSMD}: Table of unweighted and weighted SMDs of effect modifiers between study data and target data. Only participation weights are used.
+#' * \code{msmSummary}: Summary object of model object for MSM. The correct variance estimators are set here for \code{glm}, whereas they are set in \code{transportIP} for \code{survreg} and \code{coxph}.
 #'
-#' @examples
+#' @export
 summary.transportIP <- function(transportIPResult, covariates = NULL, effectModifiers = NULL) {
   
   
@@ -269,15 +286,14 @@ summary.transportIP <- function(transportIPResult, covariates = NULL, effectModi
   return(summaryTransportIP)
 }
 
-#' @rdname summary
+#' @rdname summary.transportIP
 #'
 #' @param summaryTransportIP Result from transportIP function.
 #' @param out Output stream.
 #'
-#' @return
 #' @export
 #'
-#' @examples
+#' 
 print.summary.transportIP <- function(summaryTransportIP, out = stdout()) {
   write("SMDs of covariates between treatments before and after weighting:", out)
   print(propensitySMD, out)
@@ -289,15 +305,20 @@ print.summary.transportIP <- function(summaryTransportIP, out = stdout()) {
   summary(transportIPResult$msm)
 }
 
-#' Plots graphs for assessment of covariate balance assessment in a IOPW analysis
+#' @title Plot graphs relevant to transportability analysis using IOPW
+#'
+#' @description
+#' Plot graphs for assessment of covariate balance and results in a IOPW analysis. This function currently supports mirrored histograms, SMD plots and model coefficient plots.
 #'
 #' @param transportIPResult Result from transportIP function
-#' @param type One of \code{"propensityHist", "propensitySMD", "participationHist", "participationSMD", "msm"}. \code{Hist} produces mirrored histograms of estimated probability of treatment between treatment groups (for \code{propensity}), or of estimated probability of participation between study and target data (for \code{participation}). \code{SMD} produces SMD plots of covariates between treatment groups (for \code{propensity}) or effect modifiers between study and target data (for \code{participation}).
+#' @param type One of \code{"propensityHist", "propensitySMD", "participationHist", "participationSMD", "msm"}. \code{Hist} produces mirrored histograms of estimated probability of treatment between treatment groups (for \code{propensity}), or of estimated probability of participation between study and target data (for \code{participation}). \code{SMD} produces SMD plots of covariates between treatment groups (for \code{propensity}) or effect modifiers between study and target data (for \code{participation}). \code{msm} produces plots showing confidence intervals for the model coefficients, which should have the correct standard errors.
 #'
 #' @return
+#' A \code{ggplot} object which contains the desired plot.
+#'
 #' @export
 #'
-#' @examples
+#'
 plot.transportIP <- function(transportIPResult, type = "propensityHist") {
   summaryTransportIP <- summary(transportIPResult)
   resultPlot <- NULL
@@ -312,7 +333,7 @@ plot.transportIP <- function(transportIPResult, type = "propensityHist") {
       studyData <- propensityModel$data
       studyData$propensityScore <- propensityModel$fitted.values
       treatment <- transportIPResult$treatment
-      resultPlot <- ggplot2::ggplot(studyData, aes(propensityScore)) + halfmoon::geom_mirror_histogram(aes(group) = as.name(treatment))
+      resultPlot <- ggplot2::ggplot(studyData, aes(propensityScore)) + halfmoon::geom_mirror_histogram(aes(group = as.name(treatment)))
     } else {
       stop("Custom propensity weights were used. Please plot your previously estimated propensity scores using the halfmoon package, if desired.")
     }
@@ -333,7 +354,7 @@ plot.transportIP <- function(transportIPResult, type = "propensityHist") {
         allData <- participationModel$data
         allData$participationScore <- participationModel$fitted.values
         participation <- transportIPResult$participation
-        resultPlot <- ggplot2::ggplot(allData, aes(participationScore)) + halfmoon::geom_mirror_histogram(aes(group) = as.name(participation))
+        resultPlot <- ggplot2::ggplot(allData, aes(participationScore)) + halfmoon::geom_mirror_histogram(aes(group = as.name(participation)))
       } else {
         stop("Custom participation weights were used. Please plot your previously estimated participation scores using the halfmoon package, if desired.")
       }
