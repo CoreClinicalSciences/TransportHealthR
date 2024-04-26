@@ -13,6 +13,7 @@ Imports:
     data.table (>= 1.15.4),
     ggplot2 (>= 3.5.1),
     halfmoon (>= 0.1.0),
+    modelsummary (>= 2.0.0),
     sandwich (>= 3.1-0),
     survival (>= 3.5-8),
     tidysmd (>= 0.2.0)
