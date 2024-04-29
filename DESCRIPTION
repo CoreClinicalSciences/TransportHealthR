@@ -14,6 +14,7 @@ Imports:
     halfmoon (>= 0.1.0),
     modelsummary (>= 2.0.0),
     sandwich (>= 3.1-0),
+    smd (>= 0.6.7),
     survival (>= 3.5-8),
     tidysmd (>= 0.2.0)
 Depends: 

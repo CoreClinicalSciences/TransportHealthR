@@ -3,4 +3,5 @@
 S3method(plot,transportIP)
 S3method(print,summary.transportIP)
 S3method(summary,transportIP)
+export(is.transportIP)
 export(transportIP)
