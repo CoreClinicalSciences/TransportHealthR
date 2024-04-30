@@ -13,7 +13,7 @@ transportIP(
   treatment = NULL,
   participation = NULL,
   response = NULL,
-  family,
+  family = stats::gaussian,
   data,
   transport = T
 )
@@ -54,6 +54,7 @@ A \code{transportIP} object containing the following components:
 \item \code{customParticipation}: Boolean indicating whether custom participation weights are used
 \item \code{treatment}: String indicating variable name of treatment
 \item \code{participation}: String indicating variable name of participation
+\item \code{response}: String indicating variable name of response
 \item \code{data}: Data provided in \code{data} argument. Either a list containing study data and target data or a data frame containing both.
 }
 }

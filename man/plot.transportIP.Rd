@@ -4,12 +4,16 @@
 \alias{plot.transportIP}
 \title{Plot graphs relevant to transportability analysis using IOPW}
 \usage{
-\method{plot}{transportIP}(transportIPResult, type = "propensityHist")
+\method{plot}{transportIP}(x, type = "propensityHist", bins = 30, ...)
 }
 \arguments{
-\item{transportIPResult}{Result from transportIP function}
+\item{x}{Result from \code{transportIP} function}
 
 \item{type}{One of \code{"propensityHist", "propensitySMD", "participationHist", "participationSMD", "msm"}. \code{Hist} produces mirrored histograms of estimated probability of treatment between treatment groups (for \code{propensity}), or of estimated probability of participation between study and target data (for \code{participation}). \code{SMD} produces SMD plots of covariates between treatment groups (for \code{propensity}) or effect modifiers between study and target data (for \code{participation}). \code{msm} produces plots showing confidence intervals for the model coefficients, which should have the correct standard errors.}
+
+\item{bins}{Number of bins for propensity score/participation probability histograms. This is only used for \code{Hist}.}
+
+\item{...}{Further arguments from previous function or to pass to next function}
 }
 \value{
 A \code{ggplot} object which contains the desired plot.

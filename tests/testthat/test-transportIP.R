@@ -1,7 +1,6 @@
 test_that("Scenario 1: separate study and target data, formula provided for propensityScoreModel and participationModel", {
   set.seed(20240429)
   data <- generateTestData()
-
   expect_no_warning(testResult <- transportIP(msmFormula = sysBloodPressure ~ med1,
                                                propensityScoreModel = med1 ~ sex + percentBodyFat + stress,
                                                participationModel = participation ~ stress + med2,
@@ -12,6 +11,28 @@ test_that("Scenario 1: separate study and target data, formula provided for prop
   expect_true(is.transportIP(testResult))
   expect_true(!testResult$customPropensity & !testResult$customParticipation)
   expect_false(is.data.frame(testResult$data))
+  
+  expect_no_warning(testSummary <- summary(testResult))
+  
+  expect_true(inherits(testSummary, "summary.transportIP"))
+  expect_true(inherits(testSummary$propensitySMD, "data.frame"))
+  expect_true(inherits(testSummary$participationSMD, "data.frame"))
+  expect_true(inherits(testSummary$msmSummary, "summary.glm"))
+  
+  expect_no_warning(testPlot <- plot(testResult, type = "propensityHist"))
+  expect_true(ggplot2::is.ggplot(testPlot))
+  
+  expect_no_warning(testPlot <- plot(testResult, type = "propensitySMD"))
+  expect_true(ggplot2::is.ggplot(testPlot))
+  
+  expect_no_warning(testPlot <- plot(testResult, type = "participationHist"))
+  expect_true(ggplot2::is.ggplot(testPlot))
+  
+  expect_no_warning(testPlot <- plot(testResult, type = "participationSMD"))
+  expect_true(ggplot2::is.ggplot(testPlot))
+  
+  expect_no_warning(testPlot <- plot(testResult, type = "msm"))
+  expect_true(ggplot2::is.ggplot(testPlot))
 })
 
 test_that("Scenario 2: merged study and target data, formula provided for propensityScoreModel and participationModel", {
@@ -36,9 +57,16 @@ test_that("Scenario 2: merged study and target data, formula provided for propen
                                                data = mergedData,
                                                transport = T))
   
+  expect_no_warning(testSummary <- summary(testResult))
+  
   expect_true(is.transportIP(testResult))
   expect_true(!testResult$customPropensity & !testResult$customParticipation)
   expect_true(is.data.frame(testResult$data))
+  
+  expect_true(inherits(testSummary, "summary.transportIP"))
+  expect_true(inherits(testSummary$propensitySMD, "data.frame"))
+  expect_true(inherits(testSummary$participationSMD, "data.frame"))
+  expect_true(inherits(testSummary$msmSummary, "summary.glm"))
   
   compareResult <- transportIP(msmFormula = sysBloodPressure ~ med1,
                                propensityScoreModel = med1 ~ sex + percentBodyFat + stress,
@@ -47,7 +75,27 @@ test_that("Scenario 2: merged study and target data, formula provided for propen
                                data = data,
                                transport = T)
   
+  compareSummary <- summary(compareResult)
+  
   expect_equal(testResult$msm$coefficients, compareResult$msm$coefficients)
+  
+  expect_equal(testSummary$propensitySMD$smd, compareSummary$propensitySMD$smd)
+  expect_equal(testSummary$participationSMD$smd, compareSummary$participationSMD$smd)
+  
+  expect_no_warning(testPlot <- plot(testResult, type = "propensityHist"))
+  expect_true(ggplot2::is.ggplot(testPlot))
+  
+  expect_no_warning(testPlot <- plot(testResult, type = "propensitySMD"))
+  expect_true(ggplot2::is.ggplot(testPlot))
+  
+  expect_no_warning(testPlot <- plot(testResult, type = "participationHist"))
+  expect_true(ggplot2::is.ggplot(testPlot))
+  
+  expect_no_warning(testPlot <- plot(testResult, type = "participationSMD"))
+  expect_true(ggplot2::is.ggplot(testPlot))
+  
+  expect_no_warning(testPlot <- plot(testResult, type = "msm"))
+  expect_true(ggplot2::is.ggplot(testPlot))
 })
 
 test_that("Scenario 3: glm provided for propensityScoreModel and participationModel (so merged data is provided)", {
@@ -76,9 +124,16 @@ test_that("Scenario 3: glm provided for propensityScoreModel and participationMo
                                               data = mergedData,
                                               transport = T))
   
+  expect_no_warning(testSummary <- summary(testResult))
+  
   expect_true(is.transportIP(testResult))
   expect_true(!testResult$customPropensity & !testResult$customParticipation)
   expect_true(is.data.frame(testResult$data))
+  
+  expect_true(inherits(testSummary, "summary.transportIP"))
+  expect_true(inherits(testSummary$propensitySMD, "data.frame"))
+  expect_true(inherits(testSummary$participationSMD, "data.frame"))
+  expect_true(inherits(testSummary$msmSummary, "summary.glm"))
   
   compareResult <- transportIP(msmFormula = sysBloodPressure ~ med1,
                                propensityScoreModel = med1 ~ sex + percentBodyFat + stress,
@@ -87,7 +142,27 @@ test_that("Scenario 3: glm provided for propensityScoreModel and participationMo
                                data = data,
                                transport = T)
   
+  compareSummary <- summary(compareResult)
+  
   expect_equal(testResult$msm$coefficients, compareResult$msm$coefficients)
+  
+  expect_equal(testSummary$propensitySMD$smd, compareSummary$propensitySMD$smd)
+  expect_equal(testSummary$participationSMD$smd, compareSummary$participationSMD$smd)
+  
+  expect_no_warning(testPlot <- plot(testResult, type = "propensityHist"))
+  expect_true(ggplot2::is.ggplot(testPlot))
+  
+  expect_no_warning(testPlot <- plot(testResult, type = "propensitySMD"))
+  expect_true(ggplot2::is.ggplot(testPlot))
+  
+  expect_no_warning(testPlot <- plot(testResult, type = "participationHist"))
+  expect_true(ggplot2::is.ggplot(testPlot))
+  
+  expect_no_warning(testPlot <- plot(testResult, type = "participationSMD"))
+  expect_true(ggplot2::is.ggplot(testPlot))
+  
+  expect_no_warning(testPlot <- plot(testResult, type = "msm"))
+  expect_true(ggplot2::is.ggplot(testPlot))
 })
 
 test_that("Scenario 4: separate study and target data, glm provided for propensityScoreModel, but not participationModel", {
@@ -109,14 +184,21 @@ test_that("Scenario 4: separate study and target data, glm provided for propensi
   
   expect_no_warning(testResult <- transportIP(msmFormula = sysBloodPressure ~ med1,
                                               propensityScoreModel = propensityScoreModel,
-                                              participationModel = participation ~ med2 + stress,
+                                              participationModel = participation ~ stress + med2,
                                               family = gaussian,
                                               data = data,
                                               transport = T))
   
+  expect_no_warning(testSummary <- summary(testResult))
+  
   expect_true(is.transportIP(testResult))
   expect_true(!testResult$customPropensity & !testResult$customParticipation)
   expect_false(is.data.frame(testResult$data))
+  
+  expect_true(inherits(testSummary, "summary.transportIP"))
+  expect_true(inherits(testSummary$propensitySMD, "data.frame"))
+  expect_true(inherits(testSummary$participationSMD, "data.frame"))
+  expect_true(inherits(testSummary$msmSummary, "summary.glm"))
   
   compareResult <- transportIP(msmFormula = sysBloodPressure ~ med1,
                                propensityScoreModel = med1 ~ sex + percentBodyFat + stress,
@@ -125,7 +207,27 @@ test_that("Scenario 4: separate study and target data, glm provided for propensi
                                data = data,
                                transport = T)
   
+  compareSummary <- summary(compareResult)
+  
   expect_equal(testResult$msm$coefficients, compareResult$msm$coefficients)
+  
+  expect_equal(testSummary$propensitySMD$smd, compareSummary$propensitySMD$smd)
+  expect_equal(testSummary$participationSMD$smd, compareSummary$participationSMD$smd)
+  
+  expect_no_warning(testPlot <- plot(testResult, type = "propensityHist"))
+  expect_true(ggplot2::is.ggplot(testPlot))
+  
+  expect_no_warning(testPlot <- plot(testResult, type = "propensitySMD"))
+  expect_true(ggplot2::is.ggplot(testPlot))
+  
+  expect_no_warning(testPlot <- plot(testResult, type = "participationHist"))
+  expect_true(ggplot2::is.ggplot(testPlot))
+  
+  expect_no_warning(testPlot <- plot(testResult, type = "participationSMD"))
+  expect_true(ggplot2::is.ggplot(testPlot))
+  
+  expect_no_warning(testPlot <- plot(testResult, type = "msm"))
+  expect_true(ggplot2::is.ggplot(testPlot))
 })
 
 test_that("Scenario 5: custom weights", {
@@ -137,30 +239,31 @@ test_that("Scenario 5: custom weights", {
                                               participationWeights = rep(1, nrow(data$studyData)),
                                               family = gaussian,
                                               data = data,
-                                              transport = T))
+                                              transport = T)) |> expect_warning()
+  #browser()
+  expect_no_warning(testSummary <- summary(testResult))
   
   expect_true(is.transportIP(testResult))
   expect_true(testResult$customPropensity & testResult$customParticipation)
   expect_false(is.data.frame(testResult$data))
   expect_true(all(testResult$propensityWeights == 1))
   expect_true(all(testResult$participationWeights == 1))
-})
-
-test_that("Testing summary.transportIP", {
-  set.seed(20240429)
-  data <- generateTestData()
-  
-  testResult <- transportIP(msmFormula = sysBloodPressure ~ med1,
-                                              propensityScoreModel = med1 ~ sex + percentBodyFat + stress,
-                                              participationModel = participation ~ stress + med2,
-                                              family = gaussian,
-                                              data = data,
-                                              transport = T)
-  browser()
-  testSummary <- summary(testResult)
   
   expect_true(inherits(testSummary, "summary.transportIP"))
   expect_true(inherits(testSummary$propensitySMD, "data.frame"))
   expect_true(inherits(testSummary$participationSMD, "data.frame"))
   expect_true(inherits(testSummary$msmSummary, "summary.glm"))
+  
+  expect_error(testPlot <- plot(testResult, type = "propensityHist"))
+  
+  expect_no_warning(testPlot <- plot(testResult, type = "propensitySMD"))
+  expect_true(ggplot2::is.ggplot(testPlot))
+  
+  expect_error(testPlot <- plot(testResult, type = "participationHist"))
+  
+  expect_no_warning(testPlot <- plot(testResult, type = "participationSMD"))
+  expect_true(ggplot2::is.ggplot(testPlot))
+  
+  expect_no_warning(testPlot <- plot(testResult, type = "msm"))
+  expect_true(ggplot2::is.ggplot(testPlot))
 })

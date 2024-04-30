@@ -5,18 +5,20 @@
 \alias{print.summary.transportIP}
 \title{Summarize results of a fitted MSM using the IOPW approach}
 \usage{
-\method{summary}{transportIP}(transportIPResult, covariates = NULL, effectModifiers = NULL)
+\method{summary}{transportIP}(object, covariates = NULL, effectModifiers = NULL, ...)
 
-\method{print}{summary.transportIP}(summaryTransportIP, out = stdout())
+\method{print}{summary.transportIP}(x, out = stdout(), ...)
 }
 \arguments{
-\item{transportIPResult}{Result from transportIP function}
+\item{object}{Result from \code{transportIP} function}
 
 \item{covariates}{Vector of strings indicating names of covariates in propensity model}
 
 \item{effectModifiers}{Vector of strings indicating names of effect modifiers in participation model}
 
-\item{summaryTransportIP}{Result from transportIP function.}
+\item{...}{Further arguments from previous function or to pass to next function}
+
+\item{x}{\code{summary.transportIP} object.}
 
 \item{out}{Output stream.}
 }

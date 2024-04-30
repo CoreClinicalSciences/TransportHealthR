@@ -8,7 +8,7 @@ generateTestData <- function() {
   stressStudy <- rbinom(nStudy, 1, 0.4) # Stressed is 1
   med2Study <- rbinom(nStudy, 1, 0.1) # 1 means taking other med
   percentBodyFatStudy <- rnorm(nStudy, 28 - 13 * sexStudy, 2)
-  med1Study <- rbinom(nStudy, 1, expit(2 * sexStudy - 0.2 * percentBodyFatStudy + 1 * stressStudy))
+  med1Study <- rbinom(nStudy, 1, expit(0.2 * sexStudy - 0.02 * percentBodyFatStudy + 0.1 * stressStudy))
   sysBloodPressureStudy <- rnorm(nStudy, 100 + 5 * sexStudy + 0.5 * percentBodyFatStudy + 5 * stressStudy -
                                    5 * med1Study + med1Study * (-5 * med2Study + 7 * stressStudy))
   
