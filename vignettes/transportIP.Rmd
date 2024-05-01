@@ -60,3 +60,8 @@ A approach to transportability analysis is inverse odds of participation weighti
 # Example
 
 Suppose we are interested in estimating the causal effect of a medication on systolic blood pressure in a target population, but we were only able to conduct an observational study using samples from the study population. To obtain unbiased causal effect estimates using the study sample, we account for the following covariates: sex (1 for male), percent body fat, and stress (binary, 1 for stressed). Suppose further that using domain knowledge, we know that the effectiveness of the medication depends on stress levels and whether patients are taking another medication (yes or no), so these variables are effect modifiers. Notice that covariates adjusted for in the study data can also be effect modifiers.
+
+```{r}
+testData
+```
+
