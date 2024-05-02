@@ -1,6 +1,7 @@
 # TransportHealthR
 
 # Hi there!
+# Hi there again!
 `TransportHealthR` is an R package developed by Core Clinical Sciences to streamline transportability analyses for randomized clinical trials and observational studies. The package supports IP weighting for mergable individual patient data (IPD), G-computation for unmergable IPD and (aggregate data approach) for aggregate data.
 
 ## Perks of package
