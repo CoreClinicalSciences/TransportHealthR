@@ -61,24 +61,66 @@ A approach to transportability analysis is inverse odds of participation weighti
 
 Suppose we are interested in estimating the causal effect of a medication on systolic blood pressure in a target population, but we were only able to conduct an observational study using samples from the study population. To obtain unbiased causal effect estimates using the study sample, we account for the following covariates: sex (1 for male), percent body fat, and stress (binary, 1 for stressed). Suppose further that using domain knowledge, we know that the effectiveness of the medication depends on stress levels and whether patients are taking another medication (yes or no), so these variables are effect modifiers. Notice that covariates adjusted for in the study data can also be effect modifiers. We can perform this analysis as follows.
 
-```{r IPWeighting, echo = T}
-result <- transportIP(msmFormula = sysBloodPressure ~ med1,
-                          propensityScoreModel = med1 ~ sex + percentBodyFat + stress,
-                          participationModel = participation ~ stress + med2,
-                          family = gaussian,
-                          data = testData,
-                          transport = T)
+Firstly, the data from the study and target population may be separate or merged. If they are separate, put them together in a list. Make sure that the study data has the response and treatment columns, while the target data do not (which is the case 99\% of the time). If they are merged, make sure that
 
+1. The response and treatment columns for the target data are $\mathtt{NA}$, and
+2. There is a binary variable indicating which observations are in the study data and the target data, with participation being coded as $\mathtt{1}$ or $\mathtt{TRUE}$.
+
+Suppose that we have the study and target data separately as follows.
+
+```{r exampleData, echo = T}
+names(testData)
+print("Study data:")
+head(testData$studyData)
+print("Target data:")
+head(testData$targetData)
+
+```
+
+We can now perform transportability analysis with the IOPW approach using the $\mathtt{transportIP}$ function. This function needs:
+
+* A formula expressing the marginal structural model (MSM) to be fit, set in the $\mathtt{msmFormula}$ argument,
+* A formula or a $\mathtt{glm}$ object expressing the propensity model i.e. a model of treatment assignment in terms of covariates, set in the $\mathtt{propensityScoreModel}$ argument. If a formula is provided, logistic regression is used by default. Custom propensity weights from other weighting methods can also be provided to the $\mathtt{customPropensity}$ argument instead; in this case, do not set $\mathtt{propensityScoreModel}$ because it is $\mathtt{NULL}$ by default and will be overridden.
+* A formula or a $\mathtt{glm}$ object expressing the participation model i.e. a model of study participation in terms of effect modifiers, set in the $\mathtt{participationModel}$ argument. If a formula is provided, logistic regression is used by default. Custom participation weights from other weighting methods can also be provided to the $\mathtt{customParticipation}$ argument instead; in this case, do not set $\mathtt{participationModel}$ because it is $\mathtt{NULL}$ by default and will be overridden.
+* The type of MSM to be fit, set in the $\mathtt{family}$ argument. This can be any of the families that are used in $\mathtt{glm}$ or one of $\mathtt{"coxph"}$ or $\mathtt{"survreg"}$. The latter options are for survival analysis and will use default options of these methods from the $\mathtt{survival}$ package.
+* The study and target data, separate or merged, set in the $\mathtt{data}$ argument
+* Whether a transportability analysis or generalizability analysis is done, set in the $\mathtt{\transport}$ argument (true for transportability, which is by default). Generalizability analysis weighs by inverse probability of study participation rather than odds.
+
+These components are put together as follows. Here, $\mathtt{sysBloodPressure}$ is the response and $\mathtt{med1}$ is the treatment. Recall that sex, percent body fat and stress are covariates controlled for in the study, while other medication and stress are effect modifiers.
+
+```{r IPWeighting, echo = T}
+result <- transportIP(msmFormula = sysBloodPressure ~ med1, # MSM formula
+                      propensityScoreModel = med1 ~ sex + percentBodyFat + stress, # Propensity model
+                      participationModel = participation ~ stress + med2, # Participation model
+                      family = gaussian, # Type of MSM
+                      data = testData, # Data
+                      transport = T # Perform transportability analysis or generalizability analysis
+                      )
+```
+To show the results of the analysis, use the $\mathtt{summary}$ function like you would for $\mathtt{lm}$. This prints out covariate balance tables pre- and post-weighting for covariates between treatment groups (using propensity weights only) and effect modifiers (using participation weights only) between study and target data, as well as a summary output of the MSM model fit with the correct standard errors calculated by $\mathtt{sandwich::vcovBS}$. For the effect modifiers balance table, the weights used are inverse odds for study data and 1 for target data in a transportability analysis, and inverse probability for all observations in a generalizability analysis. Note that if custom participation weights are provided, the balance tables default to a transportability analysis since only the weights for observations in the study data are provided.
+
+```{r IPWeighting-summary, echo = T}
 summary(result)
 ```
 
-We can also create some plots to assess the correctness of the propensity and participation models, as well as plots showing the confidence intervals for the model coefficients.
+The validity of transportability analysis depends on some assumptions, including positivity and conditional exchangeability. Positivity is the assumption that at all observed levels of covariates and effect modifiers, the probabilities of being in the treatment group and being the study are neither 0 nor 1, respectively. To evaluate this assumption for the treatment assignment and study participation, use the $\mathtt{plot}$ function with $\mathtt{type = "propensityHist"}$ or $\mathtt{type = "participationHist"}$, respectively. This outputs mirrored histograms of probabilities of being in the treatment group for different treatment groups or of participating in the study for the study and target data, respectively. Non-overlap of the ranges of the histograms suggest violations of positivity.
 
-```{r IPWeighting-Plots, echo = T}
+```{r IPWeighting-hist, echo = T}
 plot(result, type = "propensityHist")
 plot(result, type = "participationHist")
+```
+
+Conditional exchangeability is roughly the assumption that the only possible confounding is due to the controlled covariates and effect modifiers. Under this assumption, IOPW estimates will be reliable if the weighted distributions of covariates and effect modifiers are similar between treatment groups and the study and target data, respectively. This can be (partially) evaluated using standardized mean differences (SMDs), which are shown in table form by the $\mathtt{summary}$ function. The $\mathtt{plot}$ function with $\mathtt{type = "propensitySMD"}$ or $\mathtt{type = "participationSMD"}$ provides graphical versions of these tables. A general guideline is that an SMD of below 0.1 indicates balance.
+
+```{r IPWeighting-smd, echo = T}
 plot(result, type = "propensitySMD")
 plot(result, type = "participationSMD")
+```
+
+Model coefficient plots showing confidence intervals of the effect estimates are provided by $\mathtt{plot}$ function with $\mathtt{type = "msm"}$. The standard errors are the correct ones calculated by $\mathtt{sandwich::vcovBS}$.
+
+```{r IPWeighting-msm, echo = T}
 plot(result, type = "msm")
 ```
 
+Note that all plot outputs are $\mathtt{ggplot}$s, so if you have $\mathtt{ggplot2}$ installed, you can customize them further.
