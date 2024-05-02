@@ -14,7 +14,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r setup}
+```{r setup, echo = F}
 library(TransportHealthR)
 set.seed(20240501)
 
@@ -59,9 +59,26 @@ A approach to transportability analysis is inverse odds of participation weighti
 
 # Example
 
-Suppose we are interested in estimating the causal effect of a medication on systolic blood pressure in a target population, but we were only able to conduct an observational study using samples from the study population. To obtain unbiased causal effect estimates using the study sample, we account for the following covariates: sex (1 for male), percent body fat, and stress (binary, 1 for stressed). Suppose further that using domain knowledge, we know that the effectiveness of the medication depends on stress levels and whether patients are taking another medication (yes or no), so these variables are effect modifiers. Notice that covariates adjusted for in the study data can also be effect modifiers.
+Suppose we are interested in estimating the causal effect of a medication on systolic blood pressure in a target population, but we were only able to conduct an observational study using samples from the study population. To obtain unbiased causal effect estimates using the study sample, we account for the following covariates: sex (1 for male), percent body fat, and stress (binary, 1 for stressed). Suppose further that using domain knowledge, we know that the effectiveness of the medication depends on stress levels and whether patients are taking another medication (yes or no), so these variables are effect modifiers. Notice that covariates adjusted for in the study data can also be effect modifiers. We can perform this analysis as follows.
 
-```{r}
-testData
+```{r IPWeighting, echo = T}
+result <- transportIP(msmFormula = sysBloodPressure ~ med1,
+                          propensityScoreModel = med1 ~ sex + percentBodyFat + stress,
+                          participationModel = participation ~ stress + med2,
+                          family = gaussian,
+                          data = testData,
+                          transport = T)
+
+summary(result)
+```
+
+We can also create some plots to assess the correctness of the propensity and participation models, as well as plots showing the confidence intervals for the model coefficients.
+
+```{r IPWeighting-Plots, echo = T}
+plot(result, type = "propensityHist")
+plot(result, type = "participationHist")
+plot(result, type = "propensitySMD")
+plot(result, type = "participationSMD")
+plot(result, type = "msm")
 ```
 

@@ -379,7 +379,7 @@ print.summary.transportIP <- function(x, out = stdout(), ...) {
 #'
 #' @export
 #'
-#'
+#' @importFrom rlang .data
 plot.transportIP <- function(x, type = "propensityHist", bins = 30, ...) {
   transportIPResult <- x
   summaryTransportIP <- summary(transportIPResult)
@@ -394,15 +394,15 @@ plot.transportIP <- function(x, type = "propensityHist", bins = 30, ...) {
       propensityModel <- transportIPResult$propensityScoreModel
       studyData <- propensityModel$data
       studyData$propensityScore <- propensityModel$fitted.values
-      treatment <- transportIPResult$treatment
-      resultPlot <- ggplot2::ggplot(data = studyData, mapping = ggplot2::aes_(~ propensityScore)) + halfmoon::geom_mirror_histogram(ggplot2::aes_(group = ~ .data[[treatment]], fill = ~ .data[[treatment]]), bins = bins)
+      treatmentVar <- transportIPResult$treatment
+      resultPlot <- ggplot2::ggplot(data = studyData, mapping = ggplot2::aes(.data$propensityScore)) + halfmoon::geom_mirror_histogram(ggplot2::aes(group = .data[[!!treatmentVar]], fill = .data[[!!treatmentVar]]), bins = bins)
     } else {
       stop("Custom propensity weights were used. Please plot your previously estimated propensity scores using the halfmoon package, if desired.")
     }
   } else if (type == "propensitySMD") {
     # SMD plot of covariates
       propensitySMD <- summaryTransportIP$propensitySMD
-      resultPlot <- ggplot2::ggplot(propensitySMD, ggplot2::aes_(x = ~ variable, y = ~ smd, group = ~ method, color = ~ method)) + 
+      resultPlot <- ggplot2::ggplot(propensitySMD, ggplot2::aes(x = .data$variable, y = .data$smd, group = .data$method, color = .data$method)) + 
         ggplot2::geom_line() +
         ggplot2::geom_point() +
         ggplot2::geom_hline(yintercept = 0.1) +
@@ -415,15 +415,15 @@ plot.transportIP <- function(x, type = "propensityHist", bins = 30, ...) {
         participationModel <- transportIPResult$participationModel
         allData <- participationModel$data
         allData$participationScore <- participationModel$fitted.values
-        participation <- transportIPResult$participation
-        resultPlot <- ggplot2::ggplot(allData, ggplot2::aes_(~ participationScore)) + halfmoon::geom_mirror_histogram(ggplot2::aes_(group = ~ .data[[participation]], fill = ~ .data[[participation]]), bins = bins)
+        participationVar <- transportIPResult$participation
+        resultPlot <- ggplot2::ggplot(allData, ggplot2::aes(.data$participationScore)) + halfmoon::geom_mirror_histogram(ggplot2::aes(group = .data[[!!participationVar]], fill = .data[[!!participationVar]]), bins = bins)
       } else {
         stop("Custom participation weights were used. Please plot your previously estimated participation scores using the halfmoon package, if desired.")
       }
     } else if (type == "participationSMD") {
     # SMD plots of effect modifiers
       participationSMD <- summaryTransportIP$participationSMD
-      resultPlot <- ggplot2::ggplot(participationSMD, ggplot2::aes_(x = ~ variable, y = ~ smd, group = ~ method, color = ~ method)) + 
+      resultPlot <- ggplot2::ggplot(participationSMD, ggplot2::aes(x = .data$variable, y = .data$smd, group = .data$method, color = .data$method)) + 
         ggplot2::geom_line() +
         ggplot2::geom_point() +
         ggplot2::geom_hline(yintercept = 0.1) +
