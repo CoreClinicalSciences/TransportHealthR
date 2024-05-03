@@ -103,6 +103,13 @@ To show the results of the analysis, use the $\mathtt{summary}$ function like yo
 summary(result)
 ```
 
+The $\mathtt{transportIP}$ object produced by the $\mathtt{transportIP}$ function contains the model fitting objects for the propensity model, the participation model and the MSM. You can use methods like $\mathtt{coef}$ and $\mathtt{residuals}$ on these objects themselves. This is not implemented by the package because they are not as useful as implementing $\mathtt{summary}$.
+
+```{r IPWeighting-other-S3, echo = T}
+msmResiduals <- residuals(result$msm)
+msmCoefficients <- coef(result$msm)
+```
+
 The validity of transportability analysis depends on some assumptions, including positivity and conditional exchangeability. Positivity is the assumption that at all observed levels of covariates and effect modifiers, the probabilities of being in the treatment group and being the study are neither 0 nor 1, respectively. To evaluate this assumption for the treatment assignment and study participation, use the $\mathtt{plot}$ function with $\mathtt{type = "propensityHist"}$ or $\mathtt{type = "participationHist"}$, respectively. This outputs mirrored histograms of probabilities of being in the treatment group for different treatment groups or of participating in the study for the study and target data, respectively. Non-overlap of the ranges of the histograms suggest violations of positivity.
 
 ```{r IPWeighting-hist, echo = T}
