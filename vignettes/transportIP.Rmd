@@ -84,7 +84,7 @@ We can now perform transportability analysis with the IOPW approach using the `t
 * A formula or a `glm` object expressing the participation model i.e. a model of study participation in terms of effect modifiers, set in the `participationModel` argument. If a formula is provided, logistic regression is used by default. Custom participation weights from other weighting methods can also be provided to the `customParticipation` argument instead; in this case, do not set `participationModel` because it is `NULL` by default and will be overridden.
 * The type of MSM to be fit, set in the `family` argument. This can be any of the families that are used in `glm` or one of `"coxph"` or `"survreg"`. The latter options are for survival analysis and will use default options of these methods from the `survival` package.
 * The study and target data, separate or merged, set in the `data` argument
-* Whether a transportability analysis or generalizability analysis is done, set in the `\transport` argument (true for transportability, which is by default). Generalizability analysis weighs by inverse probability of study participation rather than odds.
+* Whether a transportability analysis or generalizability analysis is done, set in the `transport` argument (true for transportability, which is by default). Generalizability analysis weighs by inverse probability of study participation rather than odds.
 
 These components are put together as follows. Here, `sysBloodPressure` is the response and `med1` is the treatment. Recall that sex, percent body fat and stress are covariates controlled for in the study, while other medication and stress are effect modifiers.
 
