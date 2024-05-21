@@ -33,6 +33,28 @@ test_that("Scenario 1: separate study and target data, formula provided for prop
   
   expect_no_warning(testPlot <- plot(testResult, type = "msm"))
   expect_true(ggplot2::is.ggplot(testPlot))
+  
+  # Test if function works properly when study data and target data are provided in opposite order
+  
+  swapData <- list()
+  
+  swapData[[1]] <- data$targetData
+  swapData[[2]] <- data$studyData
+  
+  expect_no_warning(testSwapResult <- transportIP(msmFormula = sysBloodPressure ~ med1,
+                                              propensityScoreModel = med1 ~ sex + percentBodyFat + stress,
+                                              participationModel = participation ~ stress + med2,
+                                              family = gaussian,
+                                              data = swapData,
+                                              transport = T))
+  
+  expect_true(is.transportIP(testSwapResult))
+  expect_true(!testSwapResult$customPropensity & !testSwapResult$customParticipation)
+  expect_false(is.data.frame(testSwapResult$data))
+  
+  expect_no_warning(testSwapSummary <- summary(testSwapResult))
+  
+  expect_equal(testResult$msm$coefficients, testSwapResult$msm$coefficients)
 })
 
 test_that("Scenario 2: merged study and target data, formula provided for propensityScoreModel and participationModel", {
