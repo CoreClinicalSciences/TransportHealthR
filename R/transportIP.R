@@ -143,7 +143,7 @@ transportIP <- function(msmFormula,
   
   if (!transport & length(participationWeights) > length(propensityWeights))
     participationWeights <- participationWeights[participationModel$data[, participationIndex] == 1 |
-                                                   participationModel$data[, participationIndex] == 1]
+                                                   participationModel$data[, participationIndex] == T]
   
   finalWeights <-  propensityWeights * participationWeights
               
@@ -326,7 +326,7 @@ summary.transportIP <- function(object, covariates = NULL, effectModifiers = NUL
   
   if (inherits(msmSummary, "summary.glm")) {
     msmSummary$cov.scaled <- sandwich::vcovBS(msm)
-    msmSummary$cov.unscaled <- msmSummary$cov.scaled * msmSummary$dispersion
+    msmSummary$cov.unscaled <- msmSummary$cov.scaled / msmSummary$dispersion
     msmSummary$coefficients[, 2] <- sqrt(diag(msmSummary$cov.scaled))
     msmSummary$coefficients[, 3] <- msmSummary$coefficients[, 1] / msmSummary$coefficients[, 2]
     if (msmSummary$family$family == "gaussian") msmSummary$coefficients[, 4] <- 2 * stats::pt(abs(msmSummary$coefficients[, 3]), msmSummary$df[2], lower.tail = F)
