@@ -23,7 +23,7 @@
 #'
 #' @return
 #' A \code{transportIP} object containing the following components:
-#' * \code{msm}: Raw model fit object for MSM of class \code{glm}, \code{survreg} and \code{coxph}, with the correct variance estimators appropriately replaced
+#' * \code{msm}: Raw model fit object for MSM of class \code{glm}, \code{survreg} and \code{coxph}, with the correct variance estimators appropriately replaced. If of class \code{glm}, it will have an extra \code{var} component containing the correct variance estimates.
 #' * \code{propensityScoreModel}: Model of treatment assignment, \code{NULL} if not provided and custom propensity weights are used
 #' * \code{participationModel}: Model of study participation, \code{NULL} if not provided and custom propensity weights are used
 #' * \code{propensityWeights}: Propensity weights used
@@ -39,7 +39,82 @@
 #' @export
 #'
 #' @md
-transportIP <- function(msmFormula,
+transportIP <- function (msmFormula,
+                         propensityScoreModel = NULL,
+                         participationModel = NULL,
+                         propensityWeights = NULL,
+                         participationWeights = NULL,
+                         treatment = NULL,
+                         participation = NULL,
+                         response = NULL,
+                         family = stats::gaussian, data, transport = T,
+                         seed = 123, bootstrapNum = 500) {
+  transportIPResult <- transportIPFit(msmFormula,
+                                      propensityScoreModel,
+                                      participationModel,
+                                      propensityWeights,
+                                      participationWeights,
+                                      treatment,
+                                      participation,
+                                      response,
+                                      family, data, transport)
+  
+  # Correct variance estimates by performing bootstrap, resampling study and target data separately
+  
+  if (!transportIPResult$customPropensity & !transportIPResult$customParticipation) {
+    # Extract treatment study data, control study data and target data
+    propensityScoreModel <- transportIPResult$propensityScoreModel
+    studyData <- propensityScoreModel$data
+    treatmentLevels <- levels(as.factor(propensityScoreModel$y))
+    treatmentGroupData <- list()
+    for (level in treatmentLevels) {
+      treatmentGroupData[[level]] <- studyData[as.character(propensityScoreModel$y) == level, ]
+    }
+    
+    participationModel <- transportIPResult$participationModel
+    targetData <- participationModel$data[participationModel$y == 0 | participationModel$y == F, ]
+    if (transportIPResult$response %in% names(targetData)) targetData[[transportIPResult$response]] <- NULL
+    
+    set.seed(seed)
+    bootstrapEstimates <- t(sapply(1:bootstrapNum,
+                            function (x) {
+                              treatmentGroupBoot <- list()
+                              for (level in treatmentLevels) {
+                                nSample <- nrow(treatmentGroupData[[level]])
+                                treatmentGroupBoot[[level]] <- treatmentGroupData[[level]][sample.int(nSample, replace = T), ]
+                              }
+                              for (level in treatmentLevels) {
+                                if (!exists("studyBoot")) studyBoot <- treatmentGroupBoot[[level]]
+                                else studyBoot <- rbind(studyBoot, treatmentGroupBoot[[level]])
+                              }
+                              
+                              targetBoot <- targetData[sample.int(n = nrow(targetData), replace = T), ]
+                              
+                              resultBoot <- transportIPFit(msmFormula,
+                                                        propensityScoreModel,
+                                                        participationModel,
+                                                        propensityWeights,
+                                                        participationWeights,
+                                                        treatment,
+                                                        participation,
+                                                        response,
+                                                        family, data = list(studyBoot, targetBoot), transport)
+                              
+                              return(resultBoot$msm$coefficients)
+                            }))
+    
+    varMatrix <- var(bootstrapEstimates)
+    colnames(varMatrix) <- rownames(varMatrix) <- names(transportIPResult$msm$coefficients)
+    transportIPResult$msm$var <- varMatrix
+  } else {
+    warning("Custom weights are being used. Variance estimates may be biased.")
+  }
+  
+  return(transportIPResult)
+}
+
+
+transportIPFit <- function(msmFormula,
                         propensityScoreModel = NULL,
                         participationModel = NULL,
                         propensityWeights = NULL,
@@ -150,8 +225,6 @@ transportIP <- function(msmFormula,
   if (!customPropensity) if (!(treatment %in% all.vars(msmFormula)[-1])) stop("Treatment is not included in MSM.")
   
   # Fit MSM
-  # Variance of coeffs are corrected in this method for coxph and survreg
-  # Variance of coeffs are corrected in summary.transportIP for glm
   
   # Extract study data because data frames don't behave well with ifelse
   if (!is.data.frame(data)) toAnalyze <- studyData
@@ -163,16 +236,15 @@ transportIP <- function(msmFormula,
   if (is.character(family)) {
     if (family == "coxph") {
     model <- survival::coxph(msmFormula, data = toAnalyze, weight = finalWeights)
-    model$var <- sandwich::vcovBS(model)
     } else if (family == "survreg") {
     model <- survival::survreg(msmFormula, data = toAnalyze, weight = finalWeights)
-    model$var <- sandwich::vcovBS(model)
   }} else {
     model <- stats::glm(msmFormula, family = family, data = toAnalyze, weight = finalWeights)
   }
   
   # NOTE: this model object by itself has wrong SEs. The right ones are calculated by sandwich::vcovBS. Should we handle this here or in summary.transportIP?
   # Answer: for glm objects, it should be handled in summary.transportIP. For survreg and coxph, it should be handled in this function
+  # Addendum: sandwich::vcovBS doesn't seem to be giving correct variance estimates. Bootstrap is implemented in the wrapper function.
   
   transportIPResult <- list(msm = model,
                             propensityScoreModel = propensityScoreModel,
@@ -325,7 +397,7 @@ summary.transportIP <- function(object, covariates = NULL, effectModifiers = NUL
   msmSummary <- summary(msm)
   
   if (inherits(msmSummary, "summary.glm")) {
-    msmSummary$cov.scaled <- sandwich::vcovBS(msm)
+    if (!is.null(msm$var)) msmSummary$cov.scaled <- msm$var
     msmSummary$cov.unscaled <- msmSummary$cov.scaled / msmSummary$dispersion
     msmSummary$coefficients[, 2] <- sqrt(diag(msmSummary$cov.scaled))
     msmSummary$coefficients[, 3] <- msmSummary$coefficients[, 1] / msmSummary$coefficients[, 2]
@@ -432,7 +504,7 @@ plot.transportIP <- function(x, type = "propensityHist", bins = 30, ...) {
         ggplot2::theme(legend.key = ggplot2::element_blank())
     } else if (type == "msm") {
       # Coefficient plots
-      resultPlot <- modelsummary::modelplot(transportIPResult$msm, vcov = sandwich::vcovBS)
+      resultPlot <- modelsummary::modelplot(transportIPResult$msm, vcov = list(transportIPResult$msm$var))
     }
   
   return(resultPlot)
