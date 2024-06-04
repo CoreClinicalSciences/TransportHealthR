@@ -15,11 +15,12 @@
 #' @param family Either a \code{family} function as used for \code{glm}, or one of \code{c("coxph", "survreg")}.
 #' @param data Either a single data frame containing merged study and target datasets, or a list containing the study dataset and the target dataset. Note that if participationModel is a glm object, the datasets would have been merged, so provide the merged dataset containing response, treatment, covariates controlled for in the original study, study participation and effect modifiers if this is the case. Make sure to code treatment and participation as 0-1 or TRUE-FALSE, with 1 and TRUE representing treatment group and study data, respectively.
 #' @param transport A boolean indicating whether a generalizability analysis (false) or a transportability analysis (true) is done.
+#' @param bootstrapNum Number of bootstrap datasets to simulate to obtain robust variance estimate.
 #'
 #' @details
 #' The function fits models of treatment assignment and study participation in order to calculate the weights used to fit the MSM. For each of these models, if a formula is provided, logistic regression is used by default. If a \code{glm} object is provided, the function extracts the necessary weights from the object. The function does not support other weighting methods, so if they are required, provide custom weights.
 #' 
-#' The MSM-fitting functions do not provide correct standard errors as-is. \code{sandwich::vcovBS} is used to calculate robust bootstrap variance estimators of the parameter estimators. The function replaces the variance component in \code{summary.glm}, \code{coxph} and \code{survreg} with the robust variance estimators directly. This does not seem to behave well with \code{predict.glm} yet, but prediction is not of primary interest in a generalizability or transportability analysis.
+#' The MSM-fitting functions do not provide correct standard errors as-is. Bootstrap is used to calculate robust bootstrap variance estimators of the parameter estimators. The function replaces the variance component in \code{summary.glm}, \code{coxph} and \code{survreg} with the robust variance estimators directly. This does not seem to behave well with \code{predict.glm} yet, but prediction is not of primary interest in a generalizability or transportability analysis.
 #'
 #' @return
 #' A \code{transportIP} object containing the following components:
@@ -47,8 +48,7 @@ transportIP <- function (msmFormula,
                          treatment = NULL,
                          participation = NULL,
                          response = NULL,
-                         family = stats::gaussian, data, transport = T,
-                         seed = 123, bootstrapNum = 500) {
+                         family = stats::gaussian, data, transport = T, bootstrapNum = 500) {
   transportIPResult <- transportIPFit(msmFormula,
                                       propensityScoreModel,
                                       participationModel,
@@ -75,7 +75,6 @@ transportIP <- function (msmFormula,
     targetData <- participationModel$data[participationModel$y == 0 | participationModel$y == F, ]
     if (transportIPResult$response %in% names(targetData)) targetData[[transportIPResult$response]] <- NULL
     
-    set.seed(seed)
     bootstrapEstimates <- t(sapply(1:bootstrapNum,
                             function (x) {
                               treatmentGroupBoot <- list()
