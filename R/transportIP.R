@@ -335,11 +335,11 @@ summary.transportIP <- function(object, covariates = NULL, effectModifiers = NUL
   # Calculate SMDs for covariates (should optimize)
   prePropensitySMD <- sapply(covariates, function (covariate) as.double(smd::smd(x = studyData[, which(names(studyData) == covariate)],
                                                                        g = studyData[, treatmentIndex])$estimate))
-  prePropensityBalance <- data.frame(variable = covariates, smd = prePropensitySMD, method = rep("Observed", length(covariates)))
+  prePropensityBalance <- data.frame(variable = covariates, smd = abs(prePropensitySMD), method = rep("Observed", length(covariates)))
   postPropensitySMD <- sapply(covariates, function (covariate) as.double(smd::smd(x = studyData[, which(names(studyData) == covariate)],
                                                                     g = studyData[, treatmentIndex],
                                                                     w = propensityWeights)$estimate))
-  postPropensityBalance <- data.frame(variable = covariates, smd = postPropensitySMD, method = rep("Weighted", length(covariates)))
+  postPropensityBalance <- data.frame(variable = covariates, smd = abs(postPropensitySMD), method = rep("Weighted", length(covariates)))
   
   propensityBalance <- rbind(prePropensityBalance, postPropensityBalance)
   
@@ -382,11 +382,11 @@ summary.transportIP <- function(object, covariates = NULL, effectModifiers = NUL
   # Should also optimize
   preParticipationSMD <- sapply(effectModifiers, function (effectModifier) as.double(smd::smd(x = participationData[, which(names(participationData) == effectModifier)],
                                                                                  g = participationData[, participationIndex])$estimate))
-  preParticipationBalance <- data.frame(variable = effectModifiers, smd = preParticipationSMD, method = rep("Observed", length(effectModifiers)))
+  preParticipationBalance <- data.frame(variable = effectModifiers, smd = abs(preParticipationSMD), method = rep("Observed", length(effectModifiers)))
   postParticipationSMD <- sapply(effectModifiers, function (effectModifier) as.double(smd::smd(x = participationData[, which(names(participationData) == effectModifier)],
                                                                                               g = participationData[, participationIndex],
                                                                                               w = participationWeights)$estimate))
-  postParticipationBalance <- data.frame(variable = effectModifiers, smd = postParticipationSMD, method = rep("Weighted", length(effectModifiers)))
+  postParticipationBalance <- data.frame(variable = effectModifiers, smd = abs(postParticipationSMD), method = rep("Weighted", length(effectModifiers)))
   participationBalance <- rbind(preParticipationBalance, postParticipationBalance)
   
   # If model is glm, calculate and replace correct SEs
@@ -425,10 +425,10 @@ summary.transportIP <- function(object, covariates = NULL, effectModifiers = NUL
 print.summary.transportIP <- function(x, out = stdout(), ...) {
   summaryTransportIP <- x
   
-  write("SMDs of covariates between treatments before and after weighting:", out)
+  write("Absolute SMDs of covariates between treatments before and after weighting:", out)
   print(summaryTransportIP$propensitySMD, out)
   
-  write("SMDs of effect modifiers between study and target populations before and after weighting", out)
+  write("Absolute SMDs of effect modifiers between study and target populations before and after weighting:", out)
   print(summaryTransportIP$participationSMD, out)
   
   write("MSM results:", out)
