@@ -169,8 +169,8 @@ transportIPFit <- function(msmFormula,
     if (!is.data.frame(data)) {
       # Handle case when study and target data are not yet merged
       effectModifiers <- all.vars(participationModel)[-1]
-      studyParticipationData <- studyData[, names(studyData) %in% c(effectModifiers, "participation")]
-      targetParticipationData <- targetData[, names(targetData) %in% c(effectModifiers, "participation")]
+      studyParticipationData <- studyData[, names(studyData) %in% c(effectModifiers, "participation"), drop = F]
+      targetParticipationData <- targetData[, names(targetData) %in% c(effectModifiers, "participation"), drop = F]
       if (!(participation %in% names(studyParticipationData))) {
         studyParticipationData$participation <- 1
         participation <- "participation"
@@ -356,9 +356,9 @@ summary.transportIP <- function(object, covariates = NULL, effectModifiers = NUL
       participationData <- data
     } else {
       # This only happens when user provides custom participation weights and separate study and target data
-      studyDataEM <- studyData[, names(studyData) %in% effectModifiers]
+      studyDataEM <- studyData[, names(studyData) %in% effectModifiers, drop = F]
       studyDataEM$participation <- 1
-      targetDataEM <- targetData[, names(targetData) %in% effectModifiers]
+      targetDataEM <- targetData[, names(targetData) %in% effectModifiers, drop = F]
       targetDataEM$participation <- 0
       participationData <- rbind(studyDataEM, targetDataEM)
       participation <- "participation"
