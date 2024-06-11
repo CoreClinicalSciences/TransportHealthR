@@ -11,6 +11,7 @@ RoxygenNote: 7.3.1
 Imports:
     ggplot2 (>= 3.5.1),
     halfmoon (>= 0.1.0),
+    MASS (>= 7.3),
     modelsummary (>= 2.0.0),
     rlang,
     smd (>= 0.6.7),
@@ -18,7 +19,9 @@ Imports:
 Depends: 
     R (>= 4.3.0)
 Suggests: 
-    MASS,
+    knitr,
+    markdown,
     simsurv,
     testthat (>= 3.0.0)
+VignetteBuilder: knitr
 Config/testthat/edition: 3

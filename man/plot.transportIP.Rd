@@ -4,7 +4,14 @@
 \alias{plot.transportIP}
 \title{Plot graphs relevant to transportability analysis using IOPW}
 \usage{
-\method{plot}{transportIP}(x, type = "propensityHist", bins = 30, ...)
+\method{plot}{transportIP}(
+  x,
+  type = "propensityHist",
+  bins = 30,
+  covariates = NULL,
+  effectModifiers = NULL,
+  ...
+)
 }
 \arguments{
 \item{x}{Result from \code{transportIP} function}
@@ -12,6 +19,10 @@
 \item{type}{One of \code{"propensityHist", "propensitySMD", "participationHist", "participationSMD", "msm"}. \code{Hist} produces mirrored histograms of estimated probability of treatment between treatment groups (for \code{propensity}), or of estimated probability of participation between study and target data (for \code{participation}). \code{SMD} produces SMD plots of covariates between treatment groups (for \code{propensity}) or effect modifiers between study and target data (for \code{participation}). \code{msm} produces plots showing confidence intervals for the model coefficients, which should have the correct standard errors.}
 
 \item{bins}{Number of bins for propensity score/participation probability histograms. This is only used for \code{Hist}.}
+
+\item{covariates}{Vector of strings indicating names of covariates in propensity model}
+
+\item{effectModifiers}{Vector of strings indicating names of effect modifiers in participation model}
 
 \item{...}{Further arguments from previous function or to pass to next function}
 }
