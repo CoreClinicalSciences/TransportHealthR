@@ -48,7 +48,9 @@ transportIP <- function (msmFormula,
                          treatment = NULL,
                          participation = NULL,
                          response = NULL,
-                         family = stats::gaussian, data, transport = T, bootstrapNum = 500) {
+                         family = stats::gaussian,
+                         method = c("logistic", "probit", "loglog", "cloglog", "cauchit"),
+                         data, transport = T, bootstrapNum = 500) {
   transportIPResult <- transportIPFit(msmFormula,
                                       propensityScoreModel,
                                       participationModel,
@@ -57,7 +59,7 @@ transportIP <- function (msmFormula,
                                       treatment,
                                       participation,
                                       response,
-                                      family, data, transport)
+                                      family, method, data, transport)
   
   # Correct variance estimates by performing bootstrap, resampling study and target data separately
   
@@ -99,11 +101,14 @@ transportIP <- function (msmFormula,
                                                         response,
                                                         family, data = list(studyBoot, targetBoot), transport)
                               
-                              return(resultBoot$msm$coefficients)
+                              
+                              # Add on intercept estimates from polr case. This is okay because concatenating with a NULL does nothing
+                              return(c(resultBoot$msm$coefficients, resultBoot$msm$zeta))
                             }))
     
+    # Still okay outside of polr cases because concatenating with a NULL does nothing.
     varMatrix <- var(bootstrapEstimates)
-    colnames(varMatrix) <- rownames(varMatrix) <- names(transportIPResult$msm$coefficients)
+    colnames(varMatrix) <- rownames(varMatrix) <- c(names(transportIPResult$msm$coefficients), names(transportIPResult$msm$zeta))
     transportIPResult$msm$var <- varMatrix
   } else {
     warning("Custom weights are being used. Variance estimates may be biased.")
@@ -121,7 +126,9 @@ transportIPFit <- function(msmFormula,
                         treatment = NULL,
                         participation = NULL,
                         response = NULL,
-                        family = stats::gaussian, data, transport = T) {
+                        family = stats::gaussian,
+                        method = c("logistic", "probit", "loglog", "cloglog", "cauchit"),
+                        data, transport = T) {
   
   # Auto-detect response, treatment and participation if provided
   if (is.null(response)) response <- all.vars(msmFormula)[1]
@@ -237,7 +244,10 @@ transportIPFit <- function(msmFormula,
     model <- survival::coxph(msmFormula, data = toAnalyze, weight = finalWeights)
     } else if (family == "survreg") {
     model <- survival::survreg(msmFormula, data = toAnalyze, weight = finalWeights)
-  }} else {
+    } else if (family == "polr") {
+    model <- MASS::polr(msmFormula, data = toAnalyze, weights = finalWeights, method = method)
+    }
+  } else {
     model <- stats::glm(msmFormula, family = family, data = toAnalyze, weight = finalWeights)
   }
   
@@ -402,6 +412,13 @@ summary.transportIP <- function(object, covariates = NULL, effectModifiers = NUL
     msmSummary$coefficients[, 3] <- msmSummary$coefficients[, 1] / msmSummary$coefficients[, 2]
     if (msmSummary$family$family == "gaussian") msmSummary$coefficients[, 4] <- 2 * stats::pt(abs(msmSummary$coefficients[, 3]), msmSummary$df[2], lower.tail = F)
     else msmSummary$coefficients[, 4] <- 2 * stats::pnorm(abs(msmSummary$coefficients[, 3]), lower.tail = F)
+  }
+  
+  # Same for polr
+  
+  if (inherits(msmSummary, "summary.polr")) {
+    if (!is.null(msm$var)) msmSummary$coefficients[, 2] <- sqrt(diag(msm$var))
+    msmSummary$coefficients[, 3] <- msmSummary$coefficients[, 1] / msmSummary$coefficients[, 2]
   }
   
   summaryTransportIP <- list(propensitySMD = propensityBalance,
