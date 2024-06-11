@@ -3,7 +3,7 @@ title: "Transportability analysis using IOPW with TransportHealthR"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Transportability analysis using IOPW with TransportHealthR}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{knitr::knitr}
   %\VignetteEncoding{UTF-8}
 ---
 

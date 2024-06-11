@@ -259,11 +259,12 @@ test_that("Scenario 5: custom weights", {
   expect_warning(testResult <- transportIP(msmFormula = sysBloodPressure ~ med1,
                                               propensityWeights = rep(1, nrow(data$studyData)),
                                               participationWeights = rep(1, nrow(data$studyData)),
+                                              treatment = "med1",
                                               family = gaussian,
                                               data = data,
-                                              transport = T)) |> expect_warning()
+                                              transport = T)) |> expect_warning() |> expect_warning()
   #browser()
-  expect_no_warning(testSummary <- summary(testResult))
+  expect_no_warning(testSummary <- summary(testResult, covariates = c("sex", "percentBodyFat", "stress"), effectModifiers = c("stress", "med2")))
   
   expect_true(is.transportIP(testResult))
   expect_true(testResult$customPropensity & testResult$customParticipation)
@@ -276,16 +277,16 @@ test_that("Scenario 5: custom weights", {
   expect_true(inherits(testSummary$participationSMD, "data.frame"))
   expect_true(inherits(testSummary$msmSummary, "summary.glm"))
   
-  expect_error(testPlot <- plot(testResult, type = "propensityHist"))
+  expect_error(testPlot <- plot(testResult, type = "propensityHist", covariates = c("sex", "percentBodyFat", "stress"), effectModifiers = c("stress", "med2")))
   
-  expect_no_warning(testPlot <- plot(testResult, type = "propensitySMD"))
+  expect_no_warning(testPlot <- plot(testResult, type = "propensitySMD", covariates = c("sex", "percentBodyFat", "stress"), effectModifiers = c("stress", "med2")))
   expect_true(ggplot2::is.ggplot(testPlot))
   
-  expect_error(testPlot <- plot(testResult, type = "participationHist"))
+  expect_error(testPlot <- plot(testResult, type = "participationHist", covariates = c("sex", "percentBodyFat", "stress"), effectModifiers = c("stress", "med2")))
   
-  expect_no_warning(testPlot <- plot(testResult, type = "participationSMD"))
+  expect_no_warning(testPlot <- plot(testResult, type = "participationSMD", covariates = c("sex", "percentBodyFat", "stress"), effectModifiers = c("stress", "med2")))
   expect_true(ggplot2::is.ggplot(testPlot))
   
-  expect_no_warning(testPlot <- plot(testResult, type = "msm"))
+  expect_no_warning(testPlot <- plot(testResult, type = "msm", covariates = c("sex", "percentBodyFat", "stress"), effectModifiers = c("stress", "med2")))
   expect_true(ggplot2::is.ggplot(testPlot))
 })

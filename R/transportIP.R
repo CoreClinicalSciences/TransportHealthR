@@ -13,6 +13,7 @@
 #' @param participation String indicating name of participation variable. If \code{NULL}, it will be auto-detected from \code{participationModel} if provided; otherwise it will remain \code{NULL}. Note that when using custom weights, \code{participation} should be provided so that \code{summary.transportIP} and \code{plot.transportIP} works.
 #' @param response String indicating name of response variable. If \code{NULL}, it will be auto-detected form \code{msmFormula}.
 #' @param family Either a \code{family} function as used for \code{glm}, or one of \code{c("coxph", "survreg")}.
+#' @param method Link function used for \code{polr}, one of \code{c("logistic", "probit", "loglog", "cloglog", "cauchit")}.
 #' @param data Either a single data frame containing merged study and target datasets, or a list containing the study dataset and the target dataset. Note that if participationModel is a glm object, the datasets would have been merged, so provide the merged dataset containing response, treatment, covariates controlled for in the original study, study participation and effect modifiers if this is the case. Make sure to code treatment and participation as 0-1 or TRUE-FALSE, with 1 and TRUE representing treatment group and study data, respectively.
 #' @param transport A boolean indicating whether a generalizability analysis (false) or a transportability analysis (true) is done.
 #' @param bootstrapNum Number of bootstrap datasets to simulate to obtain robust variance estimate.
@@ -107,7 +108,7 @@ transportIP <- function (msmFormula,
                             }))
     
     # Still okay outside of polr cases because concatenating with a NULL does nothing.
-    varMatrix <- var(bootstrapEstimates)
+    varMatrix <- stats::var(bootstrapEstimates)
     colnames(varMatrix) <- rownames(varMatrix) <- c(names(transportIPResult$msm$coefficients), names(transportIPResult$msm$zeta))
     transportIPResult$msm$var <- varMatrix
   } else {
@@ -460,6 +461,8 @@ print.summary.transportIP <- function(x, out = stdout(), ...) {
 #' @param x Result from \code{transportIP} function
 #' @param type One of \code{"propensityHist", "propensitySMD", "participationHist", "participationSMD", "msm"}. \code{Hist} produces mirrored histograms of estimated probability of treatment between treatment groups (for \code{propensity}), or of estimated probability of participation between study and target data (for \code{participation}). \code{SMD} produces SMD plots of covariates between treatment groups (for \code{propensity}) or effect modifiers between study and target data (for \code{participation}). \code{msm} produces plots showing confidence intervals for the model coefficients, which should have the correct standard errors.
 #' @param bins Number of bins for propensity score/participation probability histograms. This is only used for \code{Hist}.
+#' @param covariates Vector of strings indicating names of covariates in propensity model
+#' @param effectModifiers Vector of strings indicating names of effect modifiers in participation model
 #' @param ... Further arguments from previous function or to pass to next function
 #'
 #' @return
@@ -468,9 +471,9 @@ print.summary.transportIP <- function(x, out = stdout(), ...) {
 #' @export
 #'
 #' @importFrom rlang .data
-plot.transportIP <- function(x, type = "propensityHist", bins = 30, ...) {
+plot.transportIP <- function(x, type = "propensityHist", bins = 30, covariates = NULL, effectModifiers = NULL, ...) {
   transportIPResult <- x
-  summaryTransportIP <- summary(transportIPResult)
+  summaryTransportIP <- summary(transportIPResult, covariates = covariates, effectModifiers = effectModifiers)
   resultPlot <- NULL
   
   # Match argument
