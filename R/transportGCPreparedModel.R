@@ -8,6 +8,7 @@
 #' @param treatment String indicating name of treatment variable. This argument is required.
 #' @param treatmentLevels Vector of strings indicating levels of treatment variable in the study data. If \code{NULL}, it will be auto-detected using \code{treatment} and \code{studyData}.
 #' @param family Either a family function as used for \code{glm}, or one of \code{c("coxph", "survreg")}. Only required if \code{outcomeModel} is a formula.
+#' @param method Link function used for \code{polr}, one of \code{c("logistic", "probit", "loglog", "cloglog", "cauchit")}. Only required if \code{outcomeModel} is a formula and \code{polr} is used.
 #' @param studyData Data frame of the study data.
 #'
 #' @return
@@ -22,10 +23,11 @@
 #' 
 #' @md
 transportGCPreparedModel <- function(outcomeModel,
-                             response,
+                             response = NULL,
                              treatment,
                              treatmentLevels = NULL,
                              family = stats::gaussian,
+                             method = c("logistic", "probit", "loglog", "cloglog", "cauchit"),
                              studyData = NULL) {
   
   # Extract response variable
@@ -46,6 +48,8 @@ transportGCPreparedModel <- function(outcomeModel,
         outcomeModel <- survival::coxph(outcomeModel, data = studyData)
       } else if (family == "survreg") {
         outcomeModel <- survival::survreg(outcomeModel, data = studyData)
+      } else if (family == "polr") {
+        outcomeModel <- MASS::polr(outcomeModel, data = studyData, method = method)
       }
     } else {
         outcomeModel <- stats::glm(outcomeModel, family = family, data = studyData)
@@ -64,9 +68,12 @@ transportGCPreparedModel <- function(outcomeModel,
     outcomeModel$linear.predictors <- outcomeModel$residuals <- outcomeModel$n <- outcomeModel$nevent <-
       outcomeModel$concordance <- outcomeModel$means <- outcomeModel$y <- outcomeModel$x <-
       outcomeModel$model <- NULL
+  } else if (inherits(outcomeModel, "polr")) {
+    outcomeModel$fitted.values <- outcomeModel$n <- outcomeModel$nobs <- outcomeModel$lp <-
+      outcomeModel$model <- NULL
   }
   
-  preparedModel <- list(outcomeModel= outcomeModel,
+  preparedModel <- list(outcomeModel = outcomeModel,
                         response = response,
                         treatment = treatment,
                         treatmentLevels = treatmentLevels)
@@ -89,5 +96,5 @@ transportGCPreparedModel <- function(outcomeModel,
 #' @export
 is.transportGCPreparedModel <- function (preparedModel) {
   return((inherits(preparedModel$outcomeModel, "glm") | inherits(preparedModel$outcomeModel, "survreg") | inherits(preparedModel$outcomeModel, "coxph")) &
-           is.character(response) & is.character(treatment) & is.character(treatmentLevels))
+           is.character(preparedModel$response) & is.character(preparedModel$treatment) & is.character(preparedModel$treatmentLevels))
 }
