@@ -6,10 +6,11 @@
 \usage{
 transportGCPreparedModel(
   outcomeModel,
-  response,
+  response = NULL,
   treatment,
   treatmentLevels = NULL,
   family = stats::gaussian,
+  method = c("logistic", "probit", "loglog", "cloglog", "cauchit"),
   studyData = NULL
 )
 }
@@ -23,6 +24,8 @@ transportGCPreparedModel(
 \item{treatmentLevels}{Vector of strings indicating levels of treatment variable in the study data. If \code{NULL}, it will be auto-detected using \code{treatment} and \code{studyData}.}
 
 \item{family}{Either a family function as used for \code{glm}, or one of \code{c("coxph", "survreg")}. Only required if \code{outcomeModel} is a formula.}
+
+\item{method}{Link function used for \code{polr}, one of \code{c("logistic", "probit", "loglog", "cloglog", "cauchit")}. Only required if \code{outcomeModel} is a formula and \code{polr} is used.}
 
 \item{studyData}{Data frame of the study data.}
 }
