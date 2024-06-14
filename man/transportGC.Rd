@@ -19,6 +19,7 @@ transportGC(msmFormula, preparedModel, targetData, bootstrapNum = 500)
 A \code{transportGC} object with the following components:
 \itemize{
 \item \code{msm}: Raw model fit object of the MSM. Its class will be the same as that of \code{outcomeModel} in the provided \code{transportGCPreparedModel} object.
+\item \code{bootstrapNum}: Integer indicating number of bootstrap datasets simulated to calculate robust variance estimators.
 }
 }
 \description{

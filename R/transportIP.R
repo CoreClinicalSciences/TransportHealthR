@@ -73,16 +73,19 @@ transportIP <- function (msmFormula,
     for (level in treatmentLevels) {
       treatmentGroupData[[level]] <- studyData[as.character(propensityScoreModel$y) == level, ]
     }
+    nLevels <- sapply(treatmentGroupData, nrow)
+    names(nLevels) <- treatmentLevels
     
     participationModel <- transportIPResult$participationModel
     targetData <- participationModel$data[participationModel$y == 0 | participationModel$y == F, ]
     if (transportIPResult$response %in% names(targetData)) targetData[[transportIPResult$response]] <- NULL
+    nTarget <- nrow(targetData)
     
     bootstrapEstimates <- t(sapply(1:bootstrapNum,
                             function (x) {
                               treatmentGroupBoot <- list()
                               for (level in treatmentLevels) {
-                                nSample <- nrow(treatmentGroupData[[level]])
+                                nSample <- nLevels[level]
                                 treatmentGroupBoot[[level]] <- treatmentGroupData[[level]][sample.int(nSample, replace = T), ]
                               }
                               for (level in treatmentLevels) {
@@ -90,7 +93,7 @@ transportIP <- function (msmFormula,
                                 else studyBoot <- rbind(studyBoot, treatmentGroupBoot[[level]])
                               }
                               
-                              targetBoot <- targetData[sample.int(n = nrow(targetData), replace = T), ]
+                              targetBoot <- targetData[sample.int(n = nTarget, replace = T), ]
                               
                               resultBoot <- transportIPFit(msmFormula,
                                                         propensityScoreModel,
@@ -114,6 +117,8 @@ transportIP <- function (msmFormula,
   } else {
     warning("Custom weights are being used. Variance estimates may be biased.")
   }
+  
+  transportIPResult$bootstrapNum = bootstrapNum
   
   return(transportIPResult)
 }

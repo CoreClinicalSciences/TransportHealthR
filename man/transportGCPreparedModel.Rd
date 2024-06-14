@@ -11,7 +11,8 @@ transportGCPreparedModel(
   treatmentLevels = NULL,
   family = stats::gaussian,
   method = c("logistic", "probit", "loglog", "cloglog", "cauchit"),
-  studyData = NULL
+  studyData = NULL,
+  wipe = T
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ transportGCPreparedModel(
 \item{method}{Link function used for \code{polr}, one of \code{c("logistic", "probit", "loglog", "cloglog", "cauchit")}. Only required if \code{outcomeModel} is a formula and \code{polr} is used.}
 
 \item{studyData}{Data frame of the study data.}
+
+\item{wipe}{Logical indicating whether original study data should be wiped from outcome model-fitting object.}
 }
 \value{
 A \code{transportGCPreparedModel} object containing the following components:
@@ -36,6 +39,8 @@ A \code{transportGCPreparedModel} object containing the following components:
 \item \code{response}: String indicating name of response variable
 \item \code{treatment}: String indicating name of treatment variable
 \item \code{treatmentLevels}: Vector of strings indicating levels of treatment variable
+\item \code{family}: The \code{family} argument provided
+\item \code{wipe}: The \code{wipe} argument provided
 }
 }
 \description{

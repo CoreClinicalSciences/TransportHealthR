@@ -10,6 +10,7 @@
 #' @param family Either a family function as used for \code{glm}, or one of \code{c("coxph", "survreg")}. Only required if \code{outcomeModel} is a formula.
 #' @param method Link function used for \code{polr}, one of \code{c("logistic", "probit", "loglog", "cloglog", "cauchit")}. Only required if \code{outcomeModel} is a formula and \code{polr} is used.
 #' @param studyData Data frame of the study data.
+#' @param wipe Logical indicating whether original study data should be wiped from outcome model-fitting object.
 #'
 #' @return
 #' 
@@ -18,6 +19,8 @@
 #' * \code{response}: String indicating name of response variable
 #' * \code{treatment}: String indicating name of treatment variable
 #' * \code{treatmentLevels}: Vector of strings indicating levels of treatment variable
+#' * \code{family}: The \code{family} argument provided
+#' * \code{wipe}: The \code{wipe} argument provided
 #' 
 #' @export
 #' 
@@ -28,7 +31,8 @@ transportGCPreparedModel <- function(outcomeModel,
                              treatmentLevels = NULL,
                              family = stats::gaussian,
                              method = c("logistic", "probit", "loglog", "cloglog", "cauchit"),
-                             studyData = NULL) {
+                             studyData = NULL,
+                             wipe = T) {
   
   # Extract response variable
   if (is.null(response)) {
@@ -57,26 +61,30 @@ transportGCPreparedModel <- function(outcomeModel,
   }
   
   # Erase study data from outcome model object
-  if (inherits(outcomeModel, "glm")) {
-    outcomeModel$residuals <- outcomeModel$fitted.values <- outcomeModel$linear.predictors <-
-      outcomeModel$weights <- outcomeModel$y <- outcomeModel$x <- outcomeModel$model <-
-      outcomeModel$data <- outcomeModel$offset <- outcomeModel$xlevels <- NULL
-  } else if (inherits(outcomeModel, "survreg")) {
-    outcomeModel$linear.predictors <- outcomeModel$means <- outcomeModel$y <- outcomeModel$x <-
-      outcomeModel$model <- NULL
-  } else if (inherits(outcomeModel, "coxph")) {
-    outcomeModel$linear.predictors <- outcomeModel$residuals <- outcomeModel$n <- outcomeModel$nevent <-
-      outcomeModel$concordance <- outcomeModel$means <- outcomeModel$y <- outcomeModel$x <-
-      outcomeModel$model <- NULL
-  } else if (inherits(outcomeModel, "polr")) {
-    outcomeModel$fitted.values <- outcomeModel$n <- outcomeModel$nobs <- outcomeModel$lp <-
-      outcomeModel$model <- NULL
+  if (wipe) {
+    if (inherits(outcomeModel, "glm")) {
+      outcomeModel$residuals <- outcomeModel$fitted.values <- outcomeModel$linear.predictors <-
+        outcomeModel$weights <- outcomeModel$y <- outcomeModel$x <- outcomeModel$model <-
+        outcomeModel$data <- outcomeModel$offset <- outcomeModel$xlevels <- NULL
+    } else if (inherits(outcomeModel, "survreg")) {
+      outcomeModel$linear.predictors <- outcomeModel$means <- outcomeModel$y <- outcomeModel$x <-
+        outcomeModel$model <- NULL
+    } else if (inherits(outcomeModel, "coxph")) {
+      outcomeModel$linear.predictors <- outcomeModel$residuals <- outcomeModel$n <- outcomeModel$nevent <-
+        outcomeModel$concordance <- outcomeModel$means <- outcomeModel$y <- outcomeModel$x <-
+        outcomeModel$model <- NULL
+    } else if (inherits(outcomeModel, "polr")) {
+      outcomeModel$fitted.values <- outcomeModel$n <- outcomeModel$nobs <- outcomeModel$lp <-
+        outcomeModel$model <- NULL
+    }
   }
   
   preparedModel <- list(outcomeModel = outcomeModel,
                         response = response,
                         treatment = treatment,
-                        treatmentLevels = treatmentLevels)
+                        treatmentLevels = treatmentLevels,
+                        family = family,
+                        wipe = wipe)
   
   class(preparedModel) <- "transportGCPreparedModel"
   
@@ -96,5 +104,5 @@ transportGCPreparedModel <- function(outcomeModel,
 #' @export
 is.transportGCPreparedModel <- function (preparedModel) {
   return((inherits(preparedModel$outcomeModel, "glm") | inherits(preparedModel$outcomeModel, "survreg") | inherits(preparedModel$outcomeModel, "coxph")) &
-           is.character(preparedModel$response) & is.character(preparedModel$treatment) & is.character(preparedModel$treatmentLevels))
+           is.character(preparedModel$response) & is.character(preparedModel$treatment) & is.character(preparedModel$treatmentLevels) & is.logical(preparedModel$wipe))
 }

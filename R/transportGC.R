@@ -26,6 +26,7 @@
 #' @return
 #' A \code{transportGC} object with the following components:
 #' * \code{msm}: Raw model fit object of the MSM. Its class will be the same as that of \code{outcomeModel} in the provided \code{transportGCPreparedModel} object.
+#' * \code{bootstrapNum}: Integer indicating number of bootstrap datasets simulated to calculate robust variance estimators.
 #' 
 #' @export
 #' 
@@ -37,20 +38,62 @@ transportGC <- function (msmFormula,
                                       preparedModel,
                                       targetData)
   
+  if (!preparedModel$wipe) {
+    studyData <- preparedModel$outcomeModel$data
+    treatmentLevels <- preparedModel$treatmentLevels
+    treatmentGroupData <- list()
+    treatmentVector <- as.character(studyData[[preparedModel$treatment]])
+    for (level in treatmentLevels) {
+      treatmentGroupData[[level]] <- studyData[treatmentVector == level, ]
+    }
+    nLevels <- sapply(treatmentGroupData, nrow)
+    names(nLevels) <- treatmentLevels
+  }
+  
+  nTarget <- nrow(targetData)
+  
   bootstrapEstimates <- t(sapply(1:bootstrapNum,
                                  function (x) {
-                                   targetBoot <- targetData[sample.int(n = nrow(targetData), replace = T), ]
+                                   if (preparedModel$wipe) {
+                                    targetBoot <- targetData[sample.int(n = nTarget, replace = T), ]
                                    
-                                   resultBoot <- transportGCFit(msmFormula,
+                                    resultBoot <- transportGCFit(msmFormula,
                                                                 preparedModel,
                                                                 targetData = targetBoot)
+                                   } else {
+                                      treatmentGroupBoot <- list()
+                                      for (level in treatmentLevels) {
+                                        nSample <- nLevels[level]
+                                        treatmentGroupBoot[[level]] <- treatmentGroupData[[level]][sample.int(nSample, replace = T), ]
+                                      }
+                                      for (level in treatmentLevels) {
+                                        if (!exists("studyBoot")) studyBoot <- treatmentGroupBoot[[level]]
+                                        else studyBoot <- rbind(studyBoot, treatmentGroupBoot[[level]])
+                                      }
+                                     
+                                      targetBoot <- targetData[sample.int(n = nTarget, replace = T), ]
+                                     
+                                      preparedBoot <- transportGCPreparedModel(preparedModel$outcomeModel$formula,
+                                                                               response = preparedModel$response,
+                                                                               treatment = preparedModel$treatment,
+                                                                               treatmentLevels = preparedModel$treatmentLevels,
+                                                                               family = preparedModel$family,
+                                                                               method = preparedModel$method,
+                                                                               studyData = studyBoot,
+                                                                               wipe = F)
+                                      resultBoot <- transportGCFit(msmFormula,
+                                                                  preparedBoot,
+                                                                  targetData = targetBoot)
+                                   }
                                    
                                    return(c(resultBoot$msm$coefficients, resultBoot$msm$zeta))
                                  }))
   
-  varMatrix <- var(bootstrapEstimates)
+  varMatrix <- stats::var(bootstrapEstimates)
   colnames(varMatrix) <- rownames(varMatrix) <- c(names(transportGCResult$msm$coefficients), names(transportGCResult$msm$zeta))
   transportGCResult$msm$var <- varMatrix
+  
+  transportGCResult$bootstrapNum <- bootstrapNum
   
   return(transportGCResult)
 }
@@ -75,25 +118,27 @@ transportGCFit <- function (msmFormula,
   targetDataCounterfactualFrame[[treatment]] <- as.factor(targetDataCounterfactualFrame[[treatment]])
   
   # TODO: adapt to coxph since it doesn't give survival time predictions - see Lee (2024) (transporting survival of hiv...) and Chen & Tsiatis (2001)
-  if (!inherits(preparedModel$outcomeModel, "coxph")) {
+  if (!inherits(outcomeModel, "coxph")) {
     targetDataCounterfactualFrame[[response]] <- stats::predict(outcomeModel,
                                                        newdata = targetDataCounterfactualFrame,
                                                        type = "response")
     
     if (inherits(outcomeModel, "glm"))
-      msm <- glm(msmFormula, family = outcomeModel$family, data = targetDataCounterfactualFrame)
+      msm <- stats::glm(msmFormula, data = targetDataCounterfactualFrame, family = outcomeModel$family)
     else if (inherits(outcomeModel, "survreg"))
       msm <- survival::survreg(msmFormula, data = targetDataCounterfactualFrame)
     else if (inherits(outcomeModel, "polr"))
-      msm <- update(outcomeModel, .formula = msmFormula, data = targetDataCounterfactualFrame, evaluate = T)
+      msm <- MASS::polr(msmFormula, data = targetDataCounterfactualFrame, Hess = T, method = outcomeModel$method)
   }
   else {
     # Still very WIP
     counterfactualSurvCurves <- survival::survfit(preparedModel$outcomeModel, newdata = targetDataCounterfactualFrame)
-    treatmentSurvCurves <- aggregate(counterfactualSurvCurve, targetDataCounterfactualFrame[[preparedModel$treatment]])
+    treatmentSurvCurves <- stats::aggregate(counterfactualSurvCurves, targetDataCounterfactualFrame[[preparedModel$treatment]])
   }
   
-  transportGCResult <- list(msm = msm)
+  transportGCResult <- list(msm = msm,
+                            preparedModel = preparedModel,
+                            data = targetData)
   
   class(transportGCResult) <- "transportGC"
   
