@@ -145,3 +145,59 @@ transportGCFit <- function (msmFormula,
   return(transportGCResult)
   
 }
+
+summary.transportGC <- function (object, ...) {
+  transportGCResult <- object
+  
+  preparedModel <- transportGCResult$preparedModel
+  
+  preparedModelSummary <- summary(preparedModel$outcomeModel)
+  response <- preparedModel$response
+  treatment <- preparedModel$treatment
+  treatmentLevels <- preparedModel$treatmentLevels
+  
+  # If model is glm, calculate and replace correct SEs
+  
+  msm <- transportGCResult$msm
+  
+  msmSummary <- summary(msm)
+  
+  if (inherits(msmSummary, "summary.glm")) {
+    if (!is.null(msm$var)) msmSummary$cov.scaled <- msm$var
+    msmSummary$cov.unscaled <- msmSummary$cov.scaled / msmSummary$dispersion
+    msmSummary$coefficients[, 2] <- sqrt(diag(msmSummary$cov.scaled))
+    msmSummary$coefficients[, 3] <- msmSummary$coefficients[, 1] / msmSummary$coefficients[, 2]
+    if (msmSummary$family$family == "gaussian") msmSummary$coefficients[, 4] <- 2 * stats::pt(abs(msmSummary$coefficients[, 3]), msmSummary$df[2], lower.tail = F)
+    else msmSummary$coefficients[, 4] <- 2 * stats::pnorm(abs(msmSummary$coefficients[, 3]), lower.tail = F)
+  }
+  
+  # Same for polr
+  
+  if (inherits(msmSummary, "summary.polr")) {
+    if (!is.null(msm$var)) msmSummary$coefficients[, 2] <- sqrt(diag(msm$var))
+    msmSummary$coefficients[, 3] <- msmSummary$coefficients[, 1] / msmSummary$coefficients[, 2]
+  }
+  
+  summaryTransportGC <- list(msmSummary = msmSummary,
+                    preparedModelSummary = preparedModelSummary,
+                    response = response,
+                    treatment = treatment,
+                    treatmentLevels = treatmentLevels)
+  
+  class(summaryTransportGC) <- "summary.transportGC"
+  
+  return(summaryTransportGC)
+}
+
+print.summary.transportGC <- function (x, out = stdout(), ...) {
+  summaryTransportGC <- x
+  
+  write(paste0("Response: ", summaryTransportGC$response), out)
+  write(paste0("Treatment: ", summaryTransportGC$treatment), out)
+  
+  write("Fitted outcome model:", out)
+  print(summaryTransportGC$preparedModelSummary, out)
+  
+  write("Fitted MSM:", out)
+  print(summaryTransportGC$msmSummary, out)
+}
