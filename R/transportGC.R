@@ -201,3 +201,10 @@ print.summary.transportGC <- function (x, out = stdout(), ...) {
   write("Fitted MSM:", out)
   print(summaryTransportGC$msmSummary, out)
 }
+
+plot.transportGC <- function (x, ...) {
+  transportGCResult <- x
+  resultPlot <- modelsummary::modelplot(transportGCResult$msm, vcov = list(transportGCResult$msm$var))
+  
+  return(resultPlot)
+}
