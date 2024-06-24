@@ -146,6 +146,25 @@ transportGCFit <- function (msmFormula,
   
 }
 
+#' @title Summarize results of a fitted MSM object using g-computation
+#' 
+#' @description
+#' Returns summary object which contains summary objects for the MSM and the outcome model, as well as information about response and treatment variables. In the MSM summary object, the correct variance estimators are calculated.
+#' 
+#' @rdname summary.transportGC
+#'
+#' @param object Result from \code{transportGC} function
+#' @param ... Further arguments from previous function or to pass to next function
+#'
+#' @return
+#' The \code{summary.transportGC} function returns a \code{summary.transportGC} object containing the following components:
+#' * \code{msmSummary}: Summary object of MSM with correct variance estimates. 
+#' * \code{preparedModelSummary}: Summary object of outcome model, provided only for information. No conclusions should be drawn from the outcome model.
+#' * \code{response}: String indicating response variable name.
+#' * \code{treatment}: String indicating treatment variable name.
+#' * \code{treatmentLevels}: Vector of strings indicating levels of treatment variable
+#' 
+#' @export
 summary.transportGC <- function (object, ...) {
   transportGCResult <- object
   
@@ -189,6 +208,15 @@ summary.transportGC <- function (object, ...) {
   return(summaryTransportGC)
 }
 
+#' @rdname summary.transportGC
+#'
+#' @param x \code{summary.transportGC} object.
+#' @param out Output stream.
+#' @param ... Further arguments from previous function or to pass to next function
+#'
+#' @export
+#'
+#'
 print.summary.transportGC <- function (x, out = stdout(), ...) {
   summaryTransportGC <- x
   
@@ -202,6 +230,18 @@ print.summary.transportGC <- function (x, out = stdout(), ...) {
   print(summaryTransportGC$msmSummary, out)
 }
 
+#' @title Visually represent results of transportability analysis using g-computation
+#' 
+#' @description
+#' This function is a wrapper for \code{modelsummary::modelplot} to plot the coefficient estimates in a transportability analysis using g-computation. Note that the correct variance estimates are used in this function.
+#' 
+#' @param x Result from \code{transportGC} function.
+#' @param ... Further arguments from previous function or to pass to next function
+#'
+#' @return
+#' A \code{ggplot} object showing the estimates and confidence intervals of the MSM coefficients.
+#' 
+#' @export
 plot.transportGC <- function (x, ...) {
   transportGCResult <- x
   resultPlot <- modelsummary::modelplot(transportGCResult$msm, vcov = list(transportGCResult$msm$var))
