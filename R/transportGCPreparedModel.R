@@ -43,7 +43,8 @@ transportGCPreparedModel <- function(outcomeModel,
   # Extract treatment variable information. There is no way of detecting treatment from the outcome model formula because it often has covariates in it as well.
   if (is.null(treatment)) stop("Treatment variable name is not specified.")
 
-  treatmentLevels <- levels(studyData[[treatment]])
+  if (!is.null(studyData)) treatmentLevels <- levels(studyData[[treatment]])
+  else treatmentLevels <- levels(outcomeModel$data[[treatment]])
   
   # If not already a model object, fit the outcome model ourselves. Recall that only the party that has access to the study data should run this function and provide its output to the other party.
   if (inherits(outcomeModel, "formula")) {

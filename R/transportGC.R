@@ -248,3 +248,20 @@ plot.transportGC <- function (x, ...) {
   
   return(resultPlot)
 }
+
+#' @title Check validity of g-computation result object
+#' 
+#' @description
+#' A simple helper function that validates whether the components of the given \code{transportGC} object are of the correct types.
+#' 
+#' @param transportGCResult Result object from \code{transportGC} function
+#'
+#' @return A boolean indicating whether all components of \code{transportGC} object have the correct types.
+#' 
+#' @export
+#'
+is.transportGC <- function (transportGCResult) {
+  return((inherits(transportGCResult$msm, "glm") | inherits(transportGCResult$msm, "survreg") | inherits(transportGCResult$msm, "coxph") | inherits(transportGCResult$msm, "polr")) &
+           is.transportGCPreparedModel(transportGCResult$preparedModel) &
+           is.data.frame(transportGCResult$data))
+}
