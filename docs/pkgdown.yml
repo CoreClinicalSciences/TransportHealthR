@@ -3,5 +3,8 @@ pkgdown: 2.0.9
 pkgdown_sha: ~
 articles:
   transportIP: transportIP.html
-last_built: 2024-06-25T17:57Z
+last_built: 2024-06-25T18:14Z
+urls:
+  reference: https://coreclinicalsciences.github.io/TransportHealthR/reference
+  article: https://coreclinicalsciences.github.io/TransportHealthR/articles
 
