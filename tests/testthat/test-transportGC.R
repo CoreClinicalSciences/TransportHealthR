@@ -30,4 +30,6 @@ test_that("Outcome model provided as formula", {
   expect_true(inherits(transportGCResult, "transportGC"))
   
   expect_true(inherits(transportGCResult$msm, "glm"))
+  
+  expect_no_error(transportGCSummary <- summary(transportGCResult))
 })
